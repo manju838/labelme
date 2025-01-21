@@ -26,6 +26,38 @@
   <img src="examples/instance_segmentation/.readme/annotation.jpg" width="70%">
 </div>
 
+## Installation Setup by Manjunadh
+
+```bash
+conda create --name labelme python=3.9
+conda activate labelme
+
+git clone https://github.com/manju838/labelme.git
+cd labelme
+
+pip install -e . # Installation in executable/developer mode(changes made to repo will be reflected without reinstallation). Looks for setup.py in repo and creates a symbolic link between the development directory and site-packages in conda env.
+
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 ## Description
 
 Labelme is a graphical image annotation tool inspired by <http://labelme.csail.mit.edu>.  
