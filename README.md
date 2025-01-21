@@ -28,6 +28,7 @@
 
 ## Installation Setup by Manjunadh
 
+Installation is done on Windows with gitbash. Usage on WSL2 failed due to some errors in PyQt5
 ```bash
 conda create --name labelme python=3.9
 conda activate labelme
@@ -37,11 +38,7 @@ cd labelme
 
 pip install -e . # Installation in executable/developer mode(changes made to repo will be reflected without reinstallation). Looks for setup.py in repo and creates a symbolic link between the development directory and site-packages in conda env.
 
-
 ```
-
-
-
 
 
 
