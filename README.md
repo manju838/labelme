@@ -40,10 +40,307 @@ pip install -e . # Installation in executable/developer mode(changes made to rep
 
 
 pip install labelme2yolo==0.2.5 # Data annotated for object detection(bounding boxes) using labelme is not of YOLO format but rather "LabelMe JSON format"
+```
 
+## Directory Structure Description by Manjunadh
 
+To get the directory structure for the current github repo:
+```bash
+npm i -g @jpwilliams/gitree
+gitree
+```
 
-
+```
+.
+├── .flake8
+├── .github
+│   ├── FUNDING.yml
+│   ├── ISSUE_TEMPLATE
+│   │   ├── 1.bug_report.yml
+│   │   └── config.yml
+│   └── workflows
+│       ├── ci.yml
+│       └── release.yml
+├── .gitignore
+├── .gitmodules
+├── automationscripts
+│   ├── isolate_labelmedata.py
+│   ├── move_jsonfiles.py
+│   ├── rescale_datasets.py
+│   ├── restructure_yolodata.py
+│   └── view_dataset.py
+├── CITATION.cff
+├── examples
+│   ├── bbox_detection
+│   │   ├── .readme
+│   │   │   └── annotation.jpg
+│   │   ├── data_annotated
+│   │   │   ├── 2011_000003.jpg
+│   │   │   ├── 2011_000003.json
+│   │   │   ├── 2011_000025.jpg
+│   │   │   └── 2011_000025.json
+│   │   ├── data_dataset_voc
+│   │   │   ├── Annotations
+│   │   │   │   ├── 2011_000003.xml
+│   │   │   │   └── 2011_000025.xml
+│   │   │   ├── AnnotationsVisualization
+│   │   │   │   ├── 2011_000003.jpg
+│   │   │   │   └── 2011_000025.jpg
+│   │   │   ├── class_names.txt
+│   │   │   └── JPEGImages
+│   │   │       ├── 2011_000003.jpg
+│   │   │       └── 2011_000025.jpg
+│   │   ├── labelme2voc.py
+│   │   ├── labels.txt
+│   │   └── README.md
+│   ├── classification
+│   │   ├── .readme
+│   │   │   ├── annotation_cat.jpg
+│   │   │   └── annotation_dog.jpg
+│   │   ├── data_annotated
+│   │   │   ├── 0001.jpg
+│   │   │   ├── 0001.json
+│   │   │   ├── 0002.jpg
+│   │   │   └── 0002.json
+│   │   ├── flags.txt
+│   │   └── README.md
+│   ├── instance_segmentation
+│   │   ├── .readme
+│   │   │   ├── annotation.jpg
+│   │   │   ├── draw_label_png_class.jpg
+│   │   │   └── draw_label_png_object.jpg
+│   │   ├── data_annotated
+│   │   │   ├── 2011_000003.jpg
+│   │   │   ├── 2011_000003.json
+│   │   │   ├── 2011_000025.jpg
+│   │   │   └── 2011_000025.json
+│   │   ├── data_dataset_coco
+│   │   │   ├── annotations.json
+│   │   │   ├── JPEGImages
+│   │   │   │   ├── 2011_000003.jpg
+│   │   │   │   └── 2011_000025.jpg
+│   │   │   └── Visualization
+│   │   │       ├── 2011_000003.jpg
+│   │   │       └── 2011_000025.jpg
+│   │   ├── data_dataset_voc
+│   │   │   ├── class_names.txt
+│   │   │   ├── JPEGImages
+│   │   │   │   ├── 2011_000003.jpg
+│   │   │   │   └── 2011_000025.jpg
+│   │   │   ├── SegmentationClass
+│   │   │   │   ├── 2011_000003.png
+│   │   │   │   └── 2011_000025.png
+│   │   │   ├── SegmentationClassNpy
+│   │   │   │   ├── 2011_000003.npy
+│   │   │   │   └── 2011_000025.npy
+│   │   │   ├── SegmentationClassVisualization
+│   │   │   │   ├── 2011_000003.jpg
+│   │   │   │   └── 2011_000025.jpg
+│   │   │   ├── SegmentationObject
+│   │   │   │   ├── 2011_000003.png
+│   │   │   │   └── 2011_000025.png
+│   │   │   ├── SegmentationObjectNpy
+│   │   │   │   ├── 2011_000003.npy
+│   │   │   │   └── 2011_000025.npy
+│   │   │   └── SegmentationObjectVisualization
+│   │   │       ├── 2011_000003.jpg
+│   │   │       └── 2011_000025.jpg
+│   │   ├── labelme2coco.py
+│   │   ├── labelme2voc.py
+│   │   ├── labels.txt
+│   │   └── README.md
+│   ├── primitives
+│   │   ├── primitives.jpg
+│   │   └── primitives.json
+│   ├── semantic_segmentation
+│   │   ├── .readme
+│   │   │   ├── annotation.jpg
+│   │   │   └── draw_label_png.jpg
+│   │   ├── data_annotated
+│   │   │   ├── 2011_000003.jpg
+│   │   │   └── 2011_000025.json
+│   │   ├── data_dataset_voc
+│   │   │   ├── class_names.txt
+│   │   │   ├── JPEGImages
+│   │   │   │   ├── 2011_000003.jpg
+│   │   │   │   └── 2011_000025.jpg
+│   │   │   ├── SegmentationClass
+│   │   │   │   ├── 2011_000003.png
+│   │   │   │   └── 2011_000025.png
+│   │   │   ├── SegmentationClassNpy
+│   │   │   │   ├── 2011_000003.npy
+│   │   │   │   └── 2011_000025.npy
+│   │   │   └── SegmentationClassVisualization
+│   │   │       ├── 2011_000003.jpg
+│   │   │       └── 2011_000025.jpg
+│   │   ├── labelme2voc.py
+│   │   ├── labels.txt
+│   │   └── README.md
+│   ├── tutorial
+│   │   ├── .readme
+│   │   │   ├── annotation.jpg
+│   │   │   ├── draw_json.jpg
+│   │   │   └── draw_label_png.jpg
+│   │   ├── apc2016_obj3.jpg
+│   │   ├── apc2016_obj3.json
+│   │   ├── apc2016_obj3_json
+│   │   │   ├── img.png
+│   │   │   ├── label.png
+│   │   │   ├── label_names.txt
+│   │   │   └── label_viz.png
+│   │   ├── load_label_png.py
+│   │   └── README.md
+│   └── video_annotation
+│       ├── .readme
+│       │   ├── 00000100.jpg
+│       │   ├── 00000101.jpg
+│       │   └── data_annotated.gif
+│       ├── data_annotated
+│       │   ├── 00000100.jpg
+│       │   ├── 00000100.json
+│       │   ├── 00000101.jpg
+│       │   ├── 00000101.json
+│       │   ├── 00000102.jpg
+│       │   ├── 00000102.json
+│       │   ├── 00000103.jpg
+│       │   ├── 00000103.json
+│       │   ├── 00000104.jpg
+│       │   └── 00000104.json
+│       ├── data_dataset_voc
+│       │   ├── class_names.txt
+│       │   ├── JPEGImages
+│       │   │   ├── 00000100.jpg
+│       │   │   └── 00000104.jpg
+│       │   ├── SegmentationClass
+│       │   │   ├── 00000100.npy
+│       │   │   └── 00000104.npy
+│       │   ├── SegmentationClassPNG
+│       │   │   ├── 00000100.png
+│       │   │   └── 00000104.png
+│       │   └── SegmentationClassVisualization
+│       │       ├── 00000100.jpg
+│       │       └── 00000104.jpg
+│       ├── labelme2voc.py
+│       ├── labels.txt
+│       └── README.md
+├── labelme.desktop
+├── labelme.spec
+├── labelme
+│   ├── __init__.py
+│   ├── __main__.py
+│   ├── ai
+│   │   ├── __init__.py
+│   │   ├── _utils.py
+│   │   ├── efficient_sam.py
+│   │   ├── segment_anything_model.py
+│   │   └── text_to_annotation.py
+│   ├── app.py
+│   ├── cli
+│   │   ├── __init__.py
+│   │   ├── draw_json.py
+│   │   ├── draw_label_png.py
+│   │   ├── export_json.py
+│   │   ├── json_to_dataset.py
+│   │   └── on_docker.py
+│   ├── config
+│   │   ├── __init__.py
+│   │   └── default_config.yaml
+│   ├── icons
+│   │   ├── cancel.png
+│   │   ├── close.png
+│   │   ├── color-line.png
+│   │   ├── color.png
+│   │   ├── copy.png
+│   │   ├── delete.png
+│   │   ├── done.png
+│   │   ├── done.svg
+│   │   ├── edit.png
+│   │   ├── expert.png
+│   │   ├── eye.png
+│   │   ├── feBlend-icon.png
+│   │   ├── file.png
+│   │   ├── fit-width.png
+│   │   ├── fit-window.png
+│   │   ├── fit.png
+│   │   ├── help.png
+│   │   ├── icon.icns
+│   │   ├── icon.ico
+│   │   ├── icon.png
+│   │   ├── labels.png
+│   │   ├── labels.svg
+│   │   ├── new.png
+│   │   ├── next.png
+│   │   ├── objects.png
+│   │   ├── open.png
+│   │   ├── open.svg
+│   │   ├── prev.png
+│   │   ├── quit.png
+│   │   ├── save-as.png
+│   │   ├── save-as.svg
+│   │   ├── save.png
+│   │   ├── save.svg
+│   │   ├── undo-cross.png
+│   │   ├── undo.png
+│   │   ├── zoom-in.png
+│   │   ├── zoom-out.png
+│   │   └── zoom.png
+│   ├── label_file.py
+│   ├── shape.py
+│   ├── testing.py
+│   ├── translate
+│   │   ├── empty.ts
+│   │   ├── zh_CN.qm
+│   │   └── zh_CN.ts
+│   ├── utils
+│   │   ├── __init__.py
+│   │   ├── _io.py
+│   │   ├── image.py
+│   │   ├── qt.py
+│   │   └── shape.py
+│   └── widgets
+│       ├── __init__.py
+│       ├── ai_prompt_widget.py
+│       ├── brightness_contrast_dialog.py
+│       ├── canvas.py
+│       ├── color_dialog.py
+│       ├── escapable_qlist_widget.py
+│       ├── file_dialog_preview.py
+│       ├── label_dialog.py
+│       ├── label_list_widget.py
+│       ├── tool_bar.py
+│       ├── unique_label_qlist_widget.py
+│       └── zoom_widget.py
+├── LICENSE
+├── Makefile
+├── MANIFEST.in
+├── pytest.ini
+├── README.md +2 -2
+├── requirements-dev.txt
+├── ruff.toml
+├── setup.py
+└── tests
+    └── labelme_tests
+        ├── __init__.py
+        ├── data
+        │   ├── annotated
+        │   │   ├── 2011_000003.jpg
+        │   │   ├── 2011_000003.json
+        │   ├── annotated_with_data
+        │   │   ├── apc2016_obj3.jpg
+        │   │   └── apc2016_obj3.json
+        │   └── raw
+        │       ├── 2011_000003.jpg
+        │       └── 2011_000006.jpg
+        ├── test_app.py
+        ├── utils_tests
+        │   ├── __init__.py
+        │   ├── test_image.py
+        │   ├── test_shape.py
+        │   └── util.py
+        └── widgets_tests
+            ├── __init__.py
+            ├── test_label_dialog.py
+            └── test_label_list_widget.py
 ```
 
 ## Data Preparation
