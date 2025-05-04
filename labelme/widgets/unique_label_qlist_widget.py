@@ -7,6 +7,14 @@ from qtpy import QtWidgets
 
 from .escapable_qlist_widget import EscapableQListWidget
 
+"""
+
+Maintains a list of labels where each label is unique (no duplicates allowed).
+
+✅ Unique entries
+✅ Custom display (colored dots if needed)
+✅ Clear selection behavior
+"""
 
 class UniqueLabelQListWidget(EscapableQListWidget):
     def mousePressEvent(self, event):

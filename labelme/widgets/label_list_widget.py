@@ -6,6 +6,20 @@ from qtpy import QtWidgets
 from qtpy.QtWidgets import QStyle
 
 
+"""
+This file creates a custom list widget where:
+* Each item represents a label assigned to a shape.
+* Items can be checked/unchecked to toggle visibility or active status.
+* Users can reorder items by drag-and-drop.
+* Clicking an item selects it.
+* Double-clicking emits a signal (for editing or other actions)
+
+
+** This is not for creating or entering new labels (like label_dialog.py).
+** It is for managing the list of labels already assigned to shapes.
+"""
+
+
 # https://stackoverflow.com/a/2039745/4158863
 class HTMLDelegate(QtWidgets.QStyledItemDelegate):
     def __init__(self, parent=None):

@@ -113,7 +113,7 @@ pretrained_model: "cm_model.pt"
 # Specify the class names of the pre-trained model in the form of a list.
 CLASSES: ["__background__", "cell"]
 # detect_type: "bbox" for object detection and "mask" for instance segmentation 
-detect_type: "mask"
+detect_type: "bbox"
 # Enter a value between 0 and 1 to access reliable results. 
 # A value close to 1 is the result that the model predicted with higher confidence.
 confidence: 0.9

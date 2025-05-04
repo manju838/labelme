@@ -45,6 +45,29 @@ from scipy.ndimage import binary_fill_holes
 # - Zoom is too "steppy".
 
 
+"""
+This is the main application file. It's purpose is to:
+* Creates the main window.
+* Loads and displays the image and annotation shapes.
+* Manages the menu bar (including your Detection menu).
+* Manages the toolbar (where the Detect button lives).
+* Connects signals (events) from the Canvas and other widgets to application logic.
+* Implements loading/saving annotations.
+* Implements handling Detection button/menu commands.
+
+
+=> self.labelDialog: Dialog window to enter label after drawing a polygon or rectangle
+=> self.labelList  : List of labels assigned to shapes in the current image
+=> 
+=> 
+
+
+
+
+=> self.menus: Contains all the menus in the application. (File, Edit, View, Detection and Help)
+"""
+
+
 LABEL_COLORMAP = imgviz.label_colormap()
 
 

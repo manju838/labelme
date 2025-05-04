@@ -8,6 +8,10 @@ from qtpy import QtWidgets
 from labelme.logger import logger
 import labelme.utils
 
+"""_summary_:
+            Implements a dialog window to enter a label, pick a group id, select an existing label
+
+"""
 
 QT5 = QT_VERSION[0] == "5"
 
@@ -17,6 +21,8 @@ QT5 = QT_VERSION[0] == "5"
 
 
 class LabelQLineEdit(QtWidgets.QLineEdit):
+    # LabelQLineEdit inherits from QtWidgets.QLineEdit, which is Qt's standard single-line text input field.
+    # By inheriting from this class, LabelQLineEdit already has all the functionality of a regular text input box (text entry, selection, copy/paste, etc.)
     def setListWidget(self, list_widget):
         self.list_widget = list_widget
 
@@ -28,6 +34,12 @@ class LabelQLineEdit(QtWidgets.QLineEdit):
 
 
 class LabelDialog(QtWidgets.QDialog):
+    
+    """
+    This class implements a dialog window to enter a label, pick a group id, select an existing label from the list, and set flags for the label.
+    This is the box that pops up when you complete a rectangle or polygon and need to enter a label.
+    It is also used to edit the label of an existing shape.
+    """
     def __init__(
         self,
         text="Enter object label",
@@ -44,7 +56,7 @@ class LabelDialog(QtWidgets.QDialog):
         self._fit_to_content = fit_to_content
 
         super(LabelDialog, self).__init__(parent)
-        self.edit = LabelQLineEdit()
+        self.edit = LabelQLineEdit() # functionality of a regular text input box (text entry, selection, copy/paste, etc.) 
         self.edit.setPlaceholderText(text)
         self.edit.setValidator(labelme.utils.labelValidator())
         self.edit.editingFinished.connect(self.postProcess)

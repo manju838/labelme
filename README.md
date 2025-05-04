@@ -77,6 +77,45 @@ gdown https://drive.google.com/uc?id=1I5NXHJXqMYjLBf6HSCDWvYAnZx_X8b8v
 labelme
 ```
 
+## Notes by Manjunadh
+
+Model View Controller (MVC) Pattern [https://www.youtube.com/watch?v=DUg2SWWK18I&ab_channel=WebDevSimplified]: 
+* In system design, the Model View Controller (MVC) pattern is a way to separate the data (model), the user interface (view), and the logic that connects them (controller). 
+* This makes it easier to manage complex applications by keeping different parts of the system separate and organized.
+* Qt which is used to build labelme app, uses Model View (MV) pattern. i.e the rectangle/polygon coordinate info is stored in "model" part and the rendering part of it is handled by the "view" part.
+* Qt doesnt need a controller part (called delegate in Qt) explicitly as it is managed by app.py directly. view is needed as the same bounding box when "Edit Polygon" btn is rendered differently from when drawing the polygon or when using polygons with different labels.
+
+### How Qt implements it:
+
+| Part                               | Qt Class                                                  | Purpose                  |
+| ---------------------------------- | --------------------------------------------------------- | ------------------------ |
+| **Model**                          | `QAbstractItemModel` or subclasses (`QStandardItemModel`) | Holds the data           |
+| **View**                           | `QListView`, `QTableView`, etc.                           | Displays data            |
+| **Delegate**                       | `QStyledItemDelegate` or subclasses                       | Custom rendering/editing |
+| **Widgets combining Model & View** | `QListWidget`, `QTableWidget`                             | For simple apps          |
+
+### How labelme implements it:
+
+| Class                                                 | Qt Base Class | Model/View Role                                                 | Purpose                         |
+| ----------------------------------------------------- | ------------- | --------------------------------------------------------------- | ------------------------------- |
+| LabelListWidget (label_list_widget.py)                | QListView     | View + uses StandardItemModel (model) + HTMLDelegate (delegate) | Manage and display shape labels |
+| UniqueLabelQListWidget (unique_label_qlist_widget.py) | QListWidget   | Model/View combined                                             | Show unique labels              |
+| LabelDialog (label_dialog.py)                         | QDialog       | Not part of Model/View                                          | Get user input for labels       |
+
+### Comparison
+
+|                    | LabelListWidget             | UniqueLabelQListWidget            | LabelDialog                     |
+| ------------------ | --------------------------- | --------------------------------- | ------------------------------- |
+| Shows              | Labels *attached to shapes* | Master list of unique label names | Popup to *enter/select a label* |
+| Editable           | No (double-click to edit)   | No                                | Yes                             |
+| Selection          | Select shapes               | Select available labels           | Enter a label                   |
+| Allows duplicates? | Yes                         | No                                | Not applicable                  |
+| View type          | QListView                   | QListWidget                       | QDialog                         |
+
+
+
+
+
 ## Usage
 
 Before you begin, copy the pre-trained model into the [model folder](https://github.com/mberkay0/automated-labelme/tree/main/model). If you want to use the model used in the project, download it via the [link](https://drive.google.com/file/d/1I5NXHJXqMYjLBf6HSCDWvYAnZx_X8b8v/view?usp=share_link).

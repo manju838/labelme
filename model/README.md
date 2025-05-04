@@ -1,1 +1,1 @@
-Your pre-trained model is present in model subfolder here. i.e ```labelme/model/model```
+Your pre-trained model is present here. i.e in ```labelme/model```

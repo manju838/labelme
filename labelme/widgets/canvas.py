@@ -1,10 +1,26 @@
-from qtpy import QtCore
-from qtpy import QtGui
-from qtpy import QtWidgets
+from qtpy import QtCore     # core non-GUI functionality (signals, slots, sizes, etc.).
+from qtpy import QtGui      # GUI components like fonts, colors, etc.
+from qtpy import QtWidgets  # all the widgets (buttons, spinboxes, etc.).
 
 from labelme import QT5
 from labelme.shape import Shape
 import labelme.utils
+
+
+"""
+This file defines the Canvas class, which is the interactive drawing area where users can:
+* View the loaded image.
+* Create and edit shapes (bounding boxes, polygons, circles, lines, points, masks, etc.).
+* Interact with the shapes (move, delete, resize, select vertices).
+
+The Canvas also handles:
+* Mouse events for creating and editing annotations.
+* Highlighting vertices and edges when the user hovers or clicks.
+* Zooming and panning.
+* Undo/redo for shape editing.
+
+Signals emitted by Canvas (like newShape, shapeMoved, etc.) are connected to actions in the main app (app.py), enabling two-way communication between the drawing area and the rest of the application.
+"""
 
 
 # TODO(unknown):
