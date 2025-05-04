@@ -42,6 +42,22 @@ pip install -e . # Installation in executable/developer mode(changes made to rep
 pip install labelme2yolo==0.2.5 # Data annotated for object detection(bounding boxes) using labelme is not of YOLO format but rather "LabelMe JSON format"
 ```
 
+## Add the different repository as a seperate branch of your forked repository
+
+```
+origin     -> your labelme fork (older version)
+upstream   -> labelme repo version 5.8.1
+upstream2  -> mberkay0’s automated-labelme repo
+``` 
+
+```bash
+git remote add upstream2 <different repository url>
+git fetch upstream2
+git checkout -b <NEW_BRANCH>
+git reset --hard upstream2/main (If main branch is the default)
+git push origin <NEW_BRANCH>
+```
+
 ## Directory Structure Description by Manjunadh
 
 To get the directory structure for the current github repo:
