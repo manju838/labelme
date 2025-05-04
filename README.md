@@ -52,36 +52,30 @@ Also, if you want to train the model for your specific topic, see [ConvNeXt Mask
 - [x] Ease of use in automatic detection.
 - [x] Useful for fast data labelling in data-scarce environments such as cell detection, segmentation and tracking.
 
-
-
-## Requirements
-
-- Linux / macOS / Windows
-- Python3.7 or more
-- PyQt5 / PySide2
-- Pytorch
-
-
-## Installation
-
-
-### Linux, Windows and MacOS
-
+### Data Download ⬇️
+The files/folders used in the below links are not related to the project but example code snippets to download files/folders from shared gdrives. Note that the access permissions must be set to "Anyone with link"
 ```bash
-git clone https://github.com/mberkay0/automated-labelme.git
-  
-cd automated-labelme
-  
-python -m venv env
-# then activate virtual env.
-#.\env\Scripts\activate #Windows
-#./env/bin/activate #Linux, MacOS
+pip install gdown
+1) Download File (https://drive.google.com/file/d/1w22EsaUuyBBb9dt3vFQxp8MS1dhqfOKl/view?usp=drive_link)
 
-pip install .
-# then use from command line 
-labelme
+gdown https://drive.google.com/uc?id=1w22EsaUuyBBb9dt3vFQxp8MS1dhqfOKl
+
+2) Download Folder (https://drive.google.com/drive/folders/1dQeSFqpQg_NSFLhd3ChuSJCZ0zCSquh8)
+
+gdown --folder https://drive.google.com/drive/folders/1dQeSFqpQg_NSFLhd3ChuSJCZ0zCSquh8
+
 ```
 
+## Installation by Manjunadh
+```bash
+conda create -n old_automated_labelme python=3.8 -y
+conda activate old_automated_labelme
+pip install -e .
+cd model && mkdir model
+cd model
+gdown https://drive.google.com/uc?id=1I5NXHJXqMYjLBf6HSCDWvYAnZx_X8b8v
+labelme
+```
 
 ## Usage
 
