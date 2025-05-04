@@ -17,6 +17,7 @@ from PyQt5 import QtGui # Provides the graphical user interface components like 
 from PyQt5 import QtWidgets # Contains UI elements of application interface(Windows, dialogs,Buttons, checkboxes, sliders, and other controls etc.)
 from PyQt5.QtCore import Qt # Brings in Qt's namespace constants directly
 
+
 from labelme import __appname__
 from labelme._automation import bbox_from_text
 from labelme.config import get_config
@@ -44,6 +45,26 @@ from . import utils
 
 
 LABEL_COLORMAP = imgviz.label_colormap()
+
+
+from labelme.propall_detect import predict_on_image, get_class_name
+from PyQt5.QtCore import QPointF
+def detections_to_shapes(detections):
+    shapes = []
+    for xyxy, class_id, confidence in detections:
+        x1, y1, x2, y2 = xyxy
+        label = get_class_name(class_id)
+
+        shape = Shape(
+            label=label,
+            shape_type="rectangle",
+            description=f"confidence:{confidence:.2f}"
+        )
+        shape.addPoint(QPointF(x1, y1))
+        shape.addPoint(QPointF(x2, y2))
+        shapes.append(shape)
+    return shapes
+
 
 
 class MainWindow(QtWidgets.QMainWindow):
@@ -788,12 +809,13 @@ class MainWindow(QtWidgets.QMainWindow):
         selectAiModel.setDefaultWidget(QtWidgets.QWidget())
         selectAiModel.defaultWidget().setLayout(QtWidgets.QVBoxLayout())  # type: ignore[union-attr]
         #
-        selectAiModelLabel = QtWidgets.QLabel(self.tr("AI Mask Model"))
+        selectAiModelLabel = QtWidgets.QLabel(self.tr("Select AI Model"))
         selectAiModelLabel.setAlignment(QtCore.Qt.AlignCenter)  # type: ignore[attr-defined]
         selectAiModel.defaultWidget().layout().addWidget(selectAiModelLabel)  # type: ignore[union-attr]
+        
         #
-        self._selectAiModelComboBox = QtWidgets.QComboBox()
-        selectAiModel.defaultWidget().layout().addWidget(self._selectAiModelComboBox)  # type: ignore[union-attr]
+        self._selectAiModelComboBox = QtWidgets.QComboBox() # create a drop-down menu (QComboBox) to pick an AI model.
+        selectAiModel.defaultWidget().layout().addWidget(self._selectAiModelComboBox)  # type: ignore[union-attr] # link the dropdown with the widget in Tools bar
         MODEL_NAMES: list[tuple[str, str]] = [
             ("efficientsam:10m", "EfficientSam (speed)"),
             ("efficientsam:latest", "EfficientSam (accuracy)"),
@@ -803,9 +825,12 @@ class MainWindow(QtWidgets.QMainWindow):
             ("sam2:small", "Sam2 (speed)"),
             ("sam2:latest", "Sam2 (balanced)"),
             ("sam2:large", "Sam2 (accuracy)"),
+            ("RFDETRLarge", "Propall RFDeTR Large")
         ]
+        # Add the available models to the dropdown that is attached to the Tools bar widget
         for model_name, model_ui_name in MODEL_NAMES:
             self._selectAiModelComboBox.addItem(model_ui_name, userData=model_name)
+        # Get list of all model ui names and check if the default model is in the list
         model_ui_names: list[str] = [model_ui_name for _, model_ui_name in MODEL_NAMES]
         if self._config["ai"]["default"] in model_ui_names:
             model_index = model_ui_names.index(self._config["ai"]["default"])
@@ -829,6 +854,12 @@ class MainWindow(QtWidgets.QMainWindow):
         )
         ai_prompt_action = QtWidgets.QWidgetAction(self)
         ai_prompt_action.setDefaultWidget(self._ai_prompt_widget)
+        
+        # Create the Detect button (by Manjunadh)
+        detectButton = QtWidgets.QPushButton("Detect")
+        detectButton.clicked.connect(self._run_detection)
+        detectAction = QtWidgets.QWidgetAction(self)
+        detectAction.setDefaultWidget(detectButton)
 
         self.tools = self.toolbar("Tools")
         self.actions.tool = (  # type: ignore[attr-defined]
@@ -838,7 +869,7 @@ class MainWindow(QtWidgets.QMainWindow):
             openNextImg,
             save,
             deleteFile,
-            None,
+            None, # None is used for seperators in Tools bar(the seperator between "Delete File" and "Create Polygons" btns for example)
             createMode,
             editMode,
             duplicate,
@@ -850,6 +881,7 @@ class MainWindow(QtWidgets.QMainWindow):
             zoom,
             None,
             selectAiModel,
+            detectAction, # This is linked to the dropdown for AI models and independent of the prompt based AI detection, using the QWidgetAction wrapping the button and not the btn itself
             None,
             ai_prompt_action,
         )
@@ -934,6 +966,54 @@ class MainWindow(QtWidgets.QMainWindow):
             utils.addActions(toolbar, actions)
         self.addToolBar(Qt.TopToolBarArea, toolbar)  # type: ignore[attr-defined]
         return toolbar
+    
+    ## AI detection helper fn.
+    def _run_detection(self):
+        model_name = self._selectAiModelComboBox.currentData()
+
+        if model_name != "RFDETRLarge":
+            QtWidgets.QMessageBox.information(
+                self,
+                "Model Not Supported",
+                f"Auto-detection only supported for 'Propall RFDeTR Large'."
+            )
+            return
+
+        if not self.filename:
+            QtWidgets.QMessageBox.warning(
+                self,
+                "No Image Loaded",
+                "Please load an image first."
+            )
+            return
+
+        detections = predict_on_image(self.filename, threshold=0.4)
+
+        if not detections:
+            QtWidgets.QMessageBox.information(
+                self,
+                "No objects detected",
+                "RFDeTR found no objects."
+            )
+            return
+
+        shapes = detections_to_shapes(detections)
+        self.loadShapes(shapes, replace=True)
+        
+        # self.canvas.storeShapes()
+        # for shape in shapes:
+        #     self.addLabel(shape)  # This will auto-set color and add to label list
+
+        # self.canvas.loadShapes(shapes, replace=True)
+        # self.setDirty()
+        
+
+        QtWidgets.QMessageBox.information(
+            self,
+            "Detection Complete",
+            f"Detected {len(shapes)} objects."
+        )
+
 
     # Support Functions
 

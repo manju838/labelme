@@ -25,7 +25,7 @@ class Shape(object):
     # Flag for all other handles on the current shape
     NEAR_VERTEX = 1
 
-    PEN_WIDTH = 10
+    PEN_WIDTH = 2
 
     # The following class variables influence the drawing of all shape objects.
     line_color = None

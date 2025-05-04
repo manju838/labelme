@@ -56,6 +56,8 @@ It is written in Python and uses Qt for its graphical interface.
 conda create -n new_labelme python=3.10 -y
 conda activate new_labelme
 
+pip install rfdetr
+
 pip install uv
 uv pip install -e .
 ```

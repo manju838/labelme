@@ -31,7 +31,7 @@ shape:
   point_size: 8
 
 ai:
-  default: 'RFDeTR(large)'
+  default: 'Propall RFDeTR Large' # This is the default model ui name(the one displayed in the dropdown and not the actual model api name)
 
 # main
 flag_dock:
