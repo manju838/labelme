@@ -61,56 +61,16 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--version", "-V", action="store_true", help="show version")
     parser.add_argument("--reset-config", action="store_true", help="reset qt config")
-    parser.add_argument(
-        "--logger-level",
-        default="debug",
-        choices=["debug", "info", "warning", "fatal", "error"],
-        help="logger level",
-    )
+    parser.add_argument("--logger-level",default="debug",choices=["debug", "info", "warning", "fatal", "error"],help="logger level",)
     parser.add_argument("filename", nargs="?", help="image or label filename")
-    parser.add_argument(
-        "--output",
-        "-O",
-        "-o",
-        help="output file or directory (if it ends with .json it is "
-        "recognized as file, else as directory)",
-    )
+    parser.add_argument("--output","-O","-o",help="output file or directory (if it ends with .json it is recognized as file, else as directory)",)
     default_config_file = os.path.join(os.path.expanduser("~"), ".labelmerc")
-    parser.add_argument(
-        "--config",
-        dest="config",
-        help="config file or yaml-format string (default: {})".format(
-            default_config_file
-        ),
-        default=default_config_file,
-    )
+    parser.add_argument("--config",dest="config",help="config file or yaml-format string (default: {})".format(default_config_file),default=default_config_file,)
     # config for the gui
-    parser.add_argument(
-        "--nodata",
-        dest="store_data",
-        action="store_false",
-        help="stop storing image data to JSON file",
-        default=argparse.SUPPRESS,
-    )
-    parser.add_argument(
-        "--autosave",
-        dest="auto_save",
-        action="store_true",
-        help="auto save",
-        default=argparse.SUPPRESS,
-    )
-    parser.add_argument(
-        "--nosortlabels",
-        dest="sort_labels",
-        action="store_false",
-        help="stop sorting labels",
-        default=argparse.SUPPRESS,
-    )
-    parser.add_argument(
-        "--flags",
-        help="comma separated list of flags OR file containing flags",
-        default=argparse.SUPPRESS,
-    )
+    parser.add_argument("--nodata",dest="store_data",action="store_false",help="stop storing image data to JSON file",default=argparse.SUPPRESS,)
+    parser.add_argument("--autosave",dest="auto_save",action="store_true",help="auto save",default=argparse.SUPPRESS,)
+    parser.add_argument("--nosortlabels",dest="sort_labels",action="store_false",help="stop sorting labels",default=argparse.SUPPRESS,)
+    parser.add_argument("--flags",help="comma separated list of flags OR file containing flags",default=argparse.SUPPRESS,)
     parser.add_argument(
         "--labelflags",
         dest="label_flags",
@@ -119,30 +79,10 @@ def main():
         r"dog-\d+: [black, brown, white], .*: [occluded]})",  # NOQA
         default=argparse.SUPPRESS,
     )
-    parser.add_argument(
-        "--labels",
-        help="comma separated list of labels OR file containing labels",
-        default=argparse.SUPPRESS,
-    )
-    parser.add_argument(
-        "--validatelabel",
-        dest="validate_label",
-        choices=["exact"],
-        help="label validation types",
-        default=argparse.SUPPRESS,
-    )
-    parser.add_argument(
-        "--keep-prev",
-        action="store_true",
-        help="keep annotation of previous frame",
-        default=argparse.SUPPRESS,
-    )
-    parser.add_argument(
-        "--epsilon",
-        type=float,
-        help="epsilon to find nearest vertex on canvas",
-        default=argparse.SUPPRESS,
-    )
+    parser.add_argument("--labels",help="comma separated list of labels OR file containing labels",default=argparse.SUPPRESS,)
+    parser.add_argument("--validatelabel",dest="validate_label",choices=["exact"],help="label validation types",default=argparse.SUPPRESS,)
+    parser.add_argument("--keep-prev",action="store_true",help="keep annotation of previous frame",default=argparse.SUPPRESS,)
+    parser.add_argument("--epsilon",type=float,help="epsilon to find nearest vertex on canvas",default=argparse.SUPPRESS,)
     args = parser.parse_args()
 
     if args.version:
@@ -172,6 +112,7 @@ def main():
         else:
             args.label_flags = yaml.safe_load(args.label_flags)
 
+    # Read the parseargs values
     config_from_args = args.__dict__
     config_from_args.pop("version")
     reset_config = config_from_args.pop("reset_config")
@@ -196,21 +137,22 @@ def main():
         else:
             output_dir = output
 
-    translator = QtCore.QTranslator()
+    # translate/empty.ts
+    translator = QtCore.QTranslator() # responsible for translating the user interface into different languages.
     translator.load(
-        QtCore.QLocale.system().name(),
+        QtCore.QLocale.system().name(), # get the system locale (language and country code)
         osp.dirname(osp.abspath(__file__)) + "/translate",
-    )
+    ) # Load a translation file (like en_US.qm or fr_FR.qm) from the translate directory
     app = QtWidgets.QApplication(sys.argv)
     app.setApplicationName(__appname__)
-    app.setWindowIcon(newIcon("icon"))
+    app.setWindowIcon(newIcon("icon")) # labelme/utils/qt.py links icons directory that has all the button images and define it as a btn.
     app.installTranslator(translator)
     win = MainWindow(
         config=config,
         filename=filename,
         output_file=output_file,
         output_dir=output_dir,
-    )
+    ) # MainWindow is the main class that handles the GUI and all the logic behind it. (links to app.py)
 
     if reset_config:
         logger.info("Resetting Qt config: %s" % win.settings.fileName())

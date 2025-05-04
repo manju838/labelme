@@ -25,7 +25,7 @@ class Shape(object):
     # Flag for all other handles on the current shape
     NEAR_VERTEX = 1
 
-    PEN_WIDTH = 2
+    PEN_WIDTH = 10
 
     # The following class variables influence the drawing of all shape objects.
     line_color = None
@@ -83,10 +83,10 @@ class Shape(object):
 
     def setShapeRefined(self, shape_type, points, point_labels, mask=None):
         self._shape_raw = (self.shape_type, self.points, self.point_labels)
-        self.shape_type = shape_type
-        self.points = points
-        self.point_labels = point_labels
-        self.mask = mask
+        self.shape_type = shape_type # Defines what kind of shape this is (polygon, rectangle, circle, etc.)
+        self.points = points # Stores the coordinates of each vertex in the shape
+        self.point_labels = point_labels # Maintains labels for each point (1 for positive, others negative)
+        self.mask = mask # For mask-type annotations with pixel-level detail
 
     def restoreShapeRaw(self):
         if self._shape_raw is None:
@@ -177,10 +177,10 @@ class Shape(object):
             return
 
         color = self.select_line_color if self.selected else self.line_color
-        pen = QtGui.QPen(color)
+        pen = QtGui.QPen(color) # defines how lines will be drawn in the Qt graphics system
         # Try using integer sizes for smoother drawing(?)
         pen.setWidth(self.PEN_WIDTH)
-        painter.setPen(pen)
+        painter.setPen(pen) # apply line to painter object
 
         if self.mask is not None:
             image_to_draw = np.zeros(self.mask.shape + (4,), dtype=np.uint8)
@@ -278,6 +278,7 @@ class Shape(object):
             painter.fillPath(negative_vrtx_path, QtGui.QColor(255, 0, 0, 255))
 
     def drawVertex(self, path, i):
+        # Renders individual vertices/handles
         d = self.point_size
         shape = self.point_type
         point = self._scale_point(self.points[i])

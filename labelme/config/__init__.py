@@ -19,16 +19,15 @@ def update_dict(target_dict, new_dict, validate_item=None):
         else:
             target_dict[key] = value
 
-
 # -----------------------------------------------------------------------------
 
-
 def get_default_config():
-    config_file = osp.join(here, "default_config.yaml")
+    # config_file = osp.join(here, "default_config.yaml") # Original code
+    config_file = osp.join(here, "manju_config.yaml")
     with open(config_file) as f:
         config = yaml.safe_load(f)
 
-    # save default config to ~/.labelmerc
+    # save default config to ~/.labelmerc (user's home directory)
     user_config_file = osp.join(osp.expanduser("~"), ".labelmerc")
     if not osp.exists(user_config_file):
         try:
@@ -37,7 +36,6 @@ def get_default_config():
             logger.warning("Failed to save config: {}".format(user_config_file))
 
     return config
-
 
 def validate_config_item(key, value):
     if key == "validate_label" and value not in [None, "exact"]:
@@ -52,7 +50,6 @@ def validate_config_item(key, value):
         raise ValueError(
             "Duplicates are detected for config key 'labels': {}".format(value)
         )
-
 
 def get_config(config_file_or_yaml=None, config_from_args=None):
     # 1. default config

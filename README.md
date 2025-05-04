@@ -50,31 +50,99 @@ It is written in Python and uses Qt for its graphical interface.
 - [x] Exporting VOC-format dataset for semantic/instance segmentation. ([semantic segmentation](examples/semantic_segmentation), [instance segmentation](examples/instance_segmentation))
 - [x] Exporting COCO-format dataset for instance segmentation. ([instance segmentation](examples/instance_segmentation))
 
-
-## Installation
-
-There are 3 options to install labelme:
-
-### Option 1: Using pip
-
-For more detail, check ["Install Labelme using Pip"](https://www.labelme.io/docs/install-labelme-pip).
+## Installation in Manjunadh:
 
 ```bash
-pip install labelme
+conda create -n new_labelme python=3.10 -y
+conda activate new_labelme
+
+pip install uv
+uv pip install -e .
 ```
 
-### Option 2: Using standalone executable (Easiest)
+## Notes by Manjunadh
 
-If you're willing to invest in the convenience of simple installation without any dependencies (Python, Qt),
-you can download the standalone executable from ["Install Labelme as App"](https://www.labelme.io/docs/install-labelme-app).
+### Basic Structural Concepts
 
-It's a one-time payment for lifetime access, and it helps us to maintain this project.
+1. Makefile: 
 
-### Option 3: Using a package manager in each Linux distribution
+  * A Makefile is not Python-specific. It’s a general-purpose build automation tool file used by ```make```.
+  * Purpose: It lets you define rules (like make install, make clean, etc.) that automate common tasks.
 
-In some Linux distributions, you can install labelme via their package managers (e.g., apt, pacman). The following systems are currently available:
+Targets (commands you can run):
+| Target   | Purpose                                                                       |
+| -------- | ----------------------------------------------------------------------------- |
+| `help`   | Lists all available targets with descriptions.                                |
+| `setup`  | Installs dev dependencies from `pyproject.toml` using `uv`. (`uv sync --dev`) [An extremely fast Python package and project manager, written in Rust. ```pip install uv```] |
+| `format` | Formats code using `ruff format` and fixes lint errors automatically.         |
+| `lint`   | Checks code formatting and linting errors without fixing.                     |
+| `mypy`   | Runs type checking on the package.                                            |
+| `check`  | Runs both `lint` and `mypy` (handy shortcut).                                 |
+| `test`   | Runs the `pytest` test suite.                                                 |
+| `build`  | Builds the package (for publishing or testing distribution).                  |
 
-[![Packaging status](https://repology.org/badge/vertical-allrepos/labelme.svg)](https://repology.org/project/labelme/versions)
+```$(call exec,command to run)``` uses a helper macro exec and is equivalent to 
+```bash
+echo "command to run"
+command to run
+```
+
+2. pyproject.toml: 
+  * It’s the modern standard file for Python projects.
+  * It declares build system settings, dependencies, and project metadata.
+  * Before pyproject.toml, people used setup.py and setup.cfg (as used in main branch which is fork of an old version of labelme repo). Today, most new projects use pyproject.toml because it’s flexible and tool-agnostic.
+
+  Key Sections (First three are main ones):
+
+  * [project]: Metadata about your project (name, version, dependencies).
+  * [build-system]: Declares what tools to use for building the project. (Here, it’s saying to use setuptools).
+  * [project.scripts]:
+  Each line under this section creates an executable command. For example ```labelme = "labelme.__main__:main"``` creates a command labelme which executes main() fn. in labelme/__main__.py 
+  * [tool.hatch.metadata.hooks.fancy-pypi-readme]
+  * [dependency-groups]
+  * [tool.pytest.ini_options] : ```qt_api = "pyqt5"``` Tells pytest to use PyQt5 for any Qt-based testing.
+  * [tool.ruff.lint]: ```select = ["E", "F", "I"]``` Specifies what linting checks to enable for ruff (E=Errors, F=Flake8, I=Import sorting).
+  * [tool.ruff.lint.isort]:
+  ```force-single-line = true``` Forces every import to be on its own line (good for readability and merge conflicts).
+  * [tool.mypy]: 
+
+3. uv.lock
+  * This file is specific to ```uv``` (a faster package manager alternative) to pip and virtualenv. 
+  * It automatically locks versions of all your project’s dependencies and sub-dependencies into uv.lock. This is similar to package.lock in npm bundled projects.
+
+If uv.lock is present in the repo, install the repo in editable mode (developer mode) using the following command:
+```bash
+pip install uv
+uv pip install -e .
+```
+if there is any unseen error with the above way, you can also install using pip as follows:
+```bash
+pip install -e .
+```
+
+Comparison:
+| File               | Purpose                                      |
+| ------------------ | -------------------------------------------- |
+| `requirements.txt` | Lists main dependencies (older method)       |
+| `pyproject.toml`   | Lists main dependencies + build settings     |
+| `uv.lock`          | Pins exact versions of all (sub)dependencies |
+
+### Entrypoint and flow of code
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 ## Usage
 
