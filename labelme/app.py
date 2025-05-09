@@ -77,6 +77,7 @@ class MainWindow(QtWidgets.QMainWindow):
         output_file=None,
         output_dir=None,
     ):
+        print("=========================This is the new app.py file=========================")
         if output is not None:
             logger.warning("argument output is deprecated, use output_file instead")
             if output_file is None:
@@ -208,6 +209,35 @@ class MainWindow(QtWidgets.QMainWindow):
         self.canvas.drawingPolygon.connect(self.toggleDrawingSensitive)
 
         self.setCentralWidget(scrollArea)
+        
+        #################
+        #### Code for Image Classification by Manjunadh
+        self.classificationWidget = QtWidgets.QGroupBox("Image Classification")
+        self.classificationLayout = QtWidgets.QVBoxLayout()
+
+        # Use single-label or multi-label mode switch
+        self.classificationModeCombo = QtWidgets.QComboBox()
+        self.classificationModeCombo.addItems(["Single-label", "Multi-label"])
+        self.classificationLayout.addWidget(self.classificationModeCombo)
+        
+        self.class_labels = self._config.get("classification_labels", [])
+        self.class_label_widgets = {}
+        self.classificationModeCombo.currentIndexChanged.connect(self.on_mode_changed)
+        self.build_classification_ui()
+
+        self.classificationWidget.setLayout(self.classificationLayout)
+        # classification_dock = QtWidgets.QDockWidget("Classification", self)
+        self.classification_dock = QtWidgets.QDockWidget("Classification", self)
+        self.classification_dock.setWidget(self.classificationWidget)
+        self.addDockWidget(Qt.RightDockWidgetArea, self.classification_dock)
+
+        
+        self.classification_dock.setWidget(self.classificationWidget)
+        self.addDockWidget(Qt.RightDockWidgetArea, self.classification_dock)
+        #################
+
+        
+        
 
         features = QtWidgets.QDockWidget.DockWidgetFeatures()
         for dock in ["flag_dock", "label_dock", "shape_dock", "file_dock"]:
@@ -883,6 +913,24 @@ class MainWindow(QtWidgets.QMainWindow):
         detectAction.setDefaultWidget(detectButton)
  
         self.tools = self.toolbar("Tools")
+        
+        # Create and add Annotation Mode selector
+        modeSelectWidget = QtWidgets.QWidget()
+        modeLayout = QtWidgets.QHBoxLayout()
+        modeLayout.setContentsMargins(0, 0, 0, 0)
+        modeLayout.setSpacing(4)
+        modeLayout.addWidget(QtWidgets.QLabel("Annotation Mode:"))
+        self.annotationModeCombo = QtWidgets.QComboBox()
+        self.annotationModeCombo.addItems(["Detection", "Classification"])
+        self.annotationModeCombo.currentIndexChanged.connect(self.on_annotation_mode_changed)
+        modeLayout.addWidget(self.annotationModeCombo)
+        modeSelectWidget.setLayout(modeLayout)
+
+        # Add to toolbar
+        modeSelectAction = QtWidgets.QWidgetAction(self)
+        modeSelectAction.setDefaultWidget(modeSelectWidget)
+        self.tools.addAction(modeSelectAction)
+        
         self.actions.tool = (  # type: ignore[attr-defined]
             open_,
             opendir,
@@ -913,7 +961,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         if output_file is not None and self._config["auto_save"]:
             logger.warning(
-                "If `auto_save` argument is True, `output_file` argument "
+                "If auto_save argument is True, output_file argument "
                 "is ignored and output filename is automatically "
                 "set as IMAGE_BASENAME.json."
             )
@@ -968,6 +1016,64 @@ class MainWindow(QtWidgets.QMainWindow):
         self.zoomWidget.valueChanged.connect(self.paintCanvas)
 
         self.populateModeActions()
+
+        self.annotationModeCombo.setCurrentIndex(0)
+        self.on_annotation_mode_changed(0)
+
+
+    ######################## Code needed for Single-label and Multi-label Classification
+    def on_mode_changed(self, index):
+        self.build_classification_ui()
+
+    def on_annotation_mode_changed(self, index):
+        if index == 0:  # Detection mode
+            self.classification_dock.setVisible(False)
+            self.tools.setVisible(True)
+            
+            # Clear classification selections
+            for cb in self.class_label_widgets.values():
+                cb.setChecked(False)
+            
+        else:  # Classification mode
+            self.classification_dock.setVisible(True)
+            self.tools.setVisible(False)
+
+
+    def single_label_enforce(self, selected_label):
+        for label, cb in self.class_label_widgets.items():
+            cb.setChecked(label == selected_label)
+    
+    def build_classification_ui(self):
+        # Clear layout
+        while self.classificationLayout.count() > 1:  # Leave the mode combo
+            item = self.classificationLayout.takeAt(1)
+            widget = item.widget()
+            if widget is not None:
+                widget.setParent(None)
+
+        self.class_label_widgets = {}
+
+        if self.classificationModeCombo.currentIndex() == 0:  # Single-label
+            self._single_label_group = QtWidgets.QButtonGroup(self)
+            self._single_label_group.setExclusive(True)
+
+            for label in self.class_labels:
+                rb = QtWidgets.QRadioButton(label)
+                rb.toggled.connect(self.setDirty)
+                self._single_label_group.addButton(rb)
+                self.classificationLayout.addWidget(rb)
+                self.class_label_widgets[label] = rb
+        else:  # Multi-label
+            for label in self.class_labels:
+                cb = QtWidgets.QCheckBox(label)
+                cb.stateChanged.connect(self.setDirty)
+                self.classificationLayout.addWidget(cb)
+                self.class_label_widgets[label] = cb
+
+    
+    ########################
+
+
 
     def _toggle_class(self, class_name: str, checked: bool):
         if checked:
@@ -1196,6 +1302,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.labelFile = None
         self.otherData = None
         self.canvas.resetState()
+        for cb in self.class_label_widgets.values():
+            cb.setChecked(False)
 
     def currentItem(self):
         items = self.labelList.selectedItems()
@@ -1534,14 +1642,6 @@ class MainWindow(QtWidgets.QMainWindow):
             s.append(shape)
         self.loadShapes(s)
 
-    def loadFlags(self, flags):
-        self.flag_widget.clear()  # type: ignore[union-attr]
-        for key, flag in flags.items():
-            item = QtWidgets.QListWidgetItem(key)
-            item.setFlags(item.flags() | Qt.ItemIsUserCheckable)  # type: ignore[attr-defined]
-            item.setCheckState(Qt.Checked if flag else Qt.Unchecked)  # type: ignore[attr-defined]
-            self.flag_widget.addItem(item)  # type: ignore[union-attr]
-
     def saveLabels(self, filename):
         lf = LabelFile()
 
@@ -1563,12 +1663,27 @@ class MainWindow(QtWidgets.QMainWindow):
             return data
 
         shapes = [format_shape(item.shape()) for item in self.labelList]
+        
+        # Save flags
         flags = {}
         for i in range(self.flag_widget.count()):  # type: ignore[union-attr]
             item = self.flag_widget.item(i)  # type: ignore[union-attr]
             key = item.text()  # type: ignore[union-attr]
             flag = item.checkState() == Qt.Checked  # type: ignore[attr-defined,union-attr]
             flags[key] = flag
+        
+        # Save classification labels if classification mode is active
+        if self.classification_dock.isVisible():
+            classification_labels = [
+                label for label, cb in self.class_label_widgets.items()
+                if cb.isChecked()
+            ]
+            self.otherData = self.otherData or {}
+            self.otherData["classification_labels"] = classification_labels
+        else:
+            if self.otherData and "classification_labels" in self.otherData:
+                del self.otherData["classification_labels"]
+        
         try:
             imagePath = osp.relpath(self.imagePath, osp.dirname(filename))  # type: ignore[arg-type]
             imageData = self.imageData if self._config["store_data"] else None
@@ -1590,14 +1705,21 @@ class MainWindow(QtWidgets.QMainWindow):
                 if len(items) != 1:
                     raise RuntimeError("There are duplicate files.")
                 items[0].setCheckState(Qt.Checked)  # type: ignore[attr-defined]
-            # disable allows next and previous image to proceed
-            # self.filename = filename
             return True
         except LabelFileError as e:
             self.errorMessage(
                 self.tr("Error saving label data"), self.tr("<b>%s</b>") % e
             )
             return False
+
+    def loadFlags(self, flags):
+        self.flag_widget.clear()  # type: ignore[union-attr]
+        for key, flag in flags.items():
+            item = QtWidgets.QListWidgetItem(key)
+            item.setFlags(item.flags() | Qt.ItemIsUserCheckable)  # type: ignore[attr-defined]
+            item.setCheckState(Qt.Checked if flag else Qt.Unchecked)  # type: ignore[attr-defined]
+            self.flag_widget.addItem(item)  # type: ignore[union-attr]
+
 
     def duplicateSelectedShape(self):
         self.copySelectedShape()
@@ -1813,6 +1935,10 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.labelFile.imagePath,  # type: ignore[arg-type]
             )
             self.otherData = self.labelFile.otherData
+            classification_labels = self.labelFile.otherData.get("classification_labels", [])
+            for label, cb in self.class_label_widgets.items():
+                cb.setChecked(label in classification_labels)
+
         else:
             self.imageData = LabelFile.load_image_file(filename)
             if self.imageData:

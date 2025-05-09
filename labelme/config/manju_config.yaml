@@ -33,6 +33,8 @@ shape:
 ai:
   default: 'Propall RFDeTR Large' # This is the default model ui name(the one displayed in the dropdown and not the actual model api name)
 
+classification_labels: ["horizontal", "vertical", "circular", "four", "six", "eight", "unknown"] # Default class labels for multiclass or multilabel classification.
+
 # main
 flag_dock:
   show: true
