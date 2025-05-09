@@ -56,3 +56,7 @@ def predict_on_image(image_path: str, threshold: float = 0.5) -> List[Tuple[np.n
 
 def get_class_name(class_id: int) -> str:
     return CLASS_NAMES.get(class_id, f"class_{class_id}")
+
+def get_all_class_names() -> list[str]:
+    return list(CLASS_NAMES.values())
+

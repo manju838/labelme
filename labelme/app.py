@@ -47,8 +47,9 @@ from . import utils
 LABEL_COLORMAP = imgviz.label_colormap()
 
 
-from labelme.propall_detect import predict_on_image, get_class_name
+from labelme.propall_detect import predict_on_image, get_class_name, get_all_class_names
 from PyQt5.QtCore import QPointF
+
 def detections_to_shapes(detections):
     shapes = []
     for xyxy, class_id, confidence in detections:
@@ -64,8 +65,6 @@ def detections_to_shapes(detections):
         shape.addPoint(QPointF(x2, y2))
         shapes.append(shape)
     return shapes
-
-
 
 class MainWindow(QtWidgets.QMainWindow):
     FIT_WINDOW, FIT_WIDTH, MANUAL_ZOOM = 0, 1, 2
@@ -855,12 +854,34 @@ class MainWindow(QtWidgets.QMainWindow):
         ai_prompt_action = QtWidgets.QWidgetAction(self)
         ai_prompt_action.setDefaultWidget(self._ai_prompt_widget)
         
+        ################
+        # Create a Class Selection (checkbox dropdown) by Manjunadh
+        self._selectedClasses = set(get_all_class_names())  # All classes selected by default
+        classMenu = QtWidgets.QMenu()
+        self._classCheckboxes = {}
+        for class_name in get_all_class_names():
+            action = QtWidgets.QAction(class_name, classMenu)
+            action.setCheckable(True)
+            action.setChecked(True)
+            action.toggled.connect(lambda checked, name=class_name: self._toggle_class(name, checked))
+            classMenu.addAction(action)
+            self._classCheckboxes[class_name] = action
+
+        classSelectBtn = QtWidgets.QToolButton()
+        classSelectBtn.setText("Classes")
+        classSelectBtn.setPopupMode(QtWidgets.QToolButton.InstantPopup)
+        classSelectBtn.setMenu(classMenu)
+
+        classSelectAction = QtWidgets.QWidgetAction(self)
+        classSelectAction.setDefaultWidget(classSelectBtn)
+        
+        ################
         # Create the Detect button (by Manjunadh)
         detectButton = QtWidgets.QPushButton("Detect")
         detectButton.clicked.connect(self._run_detection)
         detectAction = QtWidgets.QWidgetAction(self)
         detectAction.setDefaultWidget(detectButton)
-
+ 
         self.tools = self.toolbar("Tools")
         self.actions.tool = (  # type: ignore[attr-defined]
             open_,
@@ -881,6 +902,7 @@ class MainWindow(QtWidgets.QMainWindow):
             zoom,
             None,
             selectAiModel,
+            classSelectAction,  # ✅ Class selector added BEFORE detect
             detectAction, # This is linked to the dropdown for AI models and independent of the prompt based AI detection, using the QWidgetAction wrapping the button and not the btn itself
             None,
             ai_prompt_action,
@@ -947,9 +969,12 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.populateModeActions()
 
-        # self.firstStart = True
-        # if self.firstStart:
-        #    QWhatsThis.enterWhatsThisMode()
+    def _toggle_class(self, class_name: str, checked: bool):
+        if checked:
+            self._selectedClasses.add(class_name)
+        else:
+            self._selectedClasses.discard(class_name)
+
 
     def menu(self, title, actions=None):
         menu = self.menuBar().addMenu(title)  # type: ignore[union-attr]
@@ -970,6 +995,8 @@ class MainWindow(QtWidgets.QMainWindow):
     ## AI detection helper fn.
     def _run_detection(self):
         model_name = self._selectAiModelComboBox.currentData()
+        
+        print(f"Selected model: {model_name}")
 
         if model_name != "RFDETRLarge":
             QtWidgets.QMessageBox.information(
@@ -997,23 +1024,32 @@ class MainWindow(QtWidgets.QMainWindow):
             )
             return
 
-        shapes = detections_to_shapes(detections)
-        self.loadShapes(shapes, replace=True)
-        
-        # self.canvas.storeShapes()
-        # for shape in shapes:
-        #     self.addLabel(shape)  # This will auto-set color and add to label list
+        ################# Snippet to Select classes
+        detections = [
+            det for det in detections
+            if get_class_name(det[1]) in self._selectedClasses
+        ]
 
-        # self.canvas.loadShapes(shapes, replace=True)
-        # self.setDirty()
+        if not detections:
+            QtWidgets.QMessageBox.information(
+                self,
+                "No selected objects found",
+                "No detections matched the selected classes."
+            )
+            return
+        #################
+
+        shapes = detections_to_shapes(detections)
         
+        self.canvas.storeShapes()
+        self.loadShapes(shapes, replace=False)
+        self.setDirty()
 
         QtWidgets.QMessageBox.information(
             self,
             "Detection Complete",
             f"Detected {len(shapes)} objects."
         )
-
 
     # Support Functions
 
