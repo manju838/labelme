@@ -56,6 +56,7 @@ It is written in Python and uses Qt for its graphical interface.
 conda create -n new_labelme python=3.10 -y
 conda activate new_labelme
 
+pip install torch==2.5.1 torchvision==0.20.1 torchaudio==2.5.1 --index-url https://download.pytorch.org/whl/cu124
 pip install rfdetr
 
 pip install uv
