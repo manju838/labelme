@@ -13,12 +13,37 @@ _PARENT_DIR = os.path.abspath(os.path.join(_THIS_DIR, os.pardir))
 # Absolute path to the checkpoint
 MODEL_PATH = os.path.join(_PARENT_DIR, "model", "checkpoint_best_ema.pth")
 
+"""
+0 - bed
+1 - commode
+2 - diningtable
+3 - door
+4 - kitchencabinet
+5 - singlesofa
+6 - sofa
+7 - wall
+8 - wall2
+9 - wardrobe
+10 - window
+"""
+
 # Map class IDs to human-readable labels
+# CLASS_NAMES = {
+#     0: "door",
+#     1: "wall",
+#     2: "window",
+#     3: "bed"
+# }
+
 CLASS_NAMES = {
-    0: "door",
-    1: "wall",
-    2: "window",
-    3: "bed"
+    0: "bed",
+    1: "commode",
+    2: "diningtable",
+    3: "door",
+    4: "singlesofa",
+    5: "sofa",
+    6: "wall",
+    7: "window"
 }
 
 # Initialize model only once (singleton pattern)
