@@ -64,6 +64,8 @@ uv pip install -e .
 
 ## Notes by Manjunadh
 
+This is the labelme version which has object detection feature using a custom pretrained model.
+
 ### Basic Structural Concepts
 
 1. Makefile: 
