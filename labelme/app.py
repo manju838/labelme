@@ -881,6 +881,12 @@ class MainWindow(QtWidgets.QMainWindow):
         detectButton.clicked.connect(self._run_detection)
         detectAction = QtWidgets.QWidgetAction(self)
         detectAction.setDefaultWidget(detectButton)
+
+        # Create the Detect All button (by Manjunadh)
+        detectAllButton = QtWidgets.QPushButton("Detect All")
+        detectAllButton.clicked.connect(self._run_detection_all)
+        detectAllAction = QtWidgets.QWidgetAction(self)
+        detectAllAction.setDefaultWidget(detectAllButton)
  
         self.tools = self.toolbar("Tools")
         self.actions.tool = (  # type: ignore[attr-defined]
@@ -904,6 +910,7 @@ class MainWindow(QtWidgets.QMainWindow):
             selectAiModel,
             classSelectAction,  # ✅ Class selector added BEFORE detect
             detectAction, # This is linked to the dropdown for AI models and independent of the prompt based AI detection, using the QWidgetAction wrapping the button and not the btn itself
+            detectAllAction,
             None,
             ai_prompt_action,
         )
@@ -1066,6 +1073,108 @@ class MainWindow(QtWidgets.QMainWindow):
             self,
             "Detection Complete",
             f"Detected {len(shapes)} objects."
+        )
+
+    def _run_detection_all(self):
+        model_name = self._selectAiModelComboBox.currentData()
+        print(f"Selected model: {model_name}")
+
+        if model_name != "RFDETRLarge":
+            QtWidgets.QMessageBox.information(
+                self,
+                "Model Not Supported",
+                f"Auto-detection only supported for 'Propall RFDeTR Large'."
+            )
+            return
+
+        if not self.imageList:
+            QtWidgets.QMessageBox.warning(
+                self,
+                "No Images",
+                "No images found in the current list."
+            )
+            return
+
+        reply = QtWidgets.QMessageBox.question(
+            self,
+            "Run Detection on All Images?",
+            f"This will run detection on {len(self.imageList)} images and save/overwrite .json files.\\nAre you sure?",
+            QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No
+        )
+        if reply != QtWidgets.QMessageBox.Yes:
+            return
+
+        progress = QtWidgets.QProgressDialog("Running detection...", "Cancel", 0, len(self.imageList), self)
+        progress.setWindowModality(Qt.WindowModal)
+        progress.show()
+
+        count = 0
+        for i, filename in enumerate(self.imageList):
+            if progress.wasCanceled():
+                break
+            progress.setValue(i)
+            
+            try:
+                detections = predict_on_image(filename, threshold=0.4)
+            except Exception as e:
+                logger.error(f"Failed to predict on {filename}: {e}")
+                continue
+
+            filtered_detections = [
+                det for det in detections
+                if get_class_name(det[1]) in self._selectedClasses
+            ]
+            
+            if not filtered_detections:
+                continue
+
+            shapes = detections_to_shapes(filtered_detections)
+            
+            try:
+                img = imgviz.io.imread(filename)
+                height, width = img.shape[:2]
+                
+                imageData = None
+                if self._config["store_data"]:
+                    with open(filename, "rb") as f:
+                        imageData = f.read()
+
+                shapes_json = []
+                for s in shapes:
+                    shapes_json.append(dict(
+                        label=s.label,
+                        points=[(p.x(), p.y()) for p in s.points],
+                        group_id=s.group_id,
+                        description=s.description,
+                        shape_type=s.shape_type,
+                        flags=s.flags,
+                        mask=None
+                    ))
+                
+                json_filename = osp.splitext(filename)[0] + ".json"
+                
+                lf = LabelFile()
+                lf.save(
+                    filename=json_filename,
+                    shapes=shapes_json,
+                    imagePath=osp.basename(filename),
+                    imageData=imageData,
+                    imageHeight=height,
+                    imageWidth=width,
+                    otherData={},
+                    flags={},
+                )
+                count += 1
+                
+            except Exception as e:
+                logger.error(f"Failed to save {filename}: {e}")
+
+        progress.setValue(len(self.imageList))
+        
+        QtWidgets.QMessageBox.information(
+            self,
+            "Batch Detection Complete",
+            f"Processed {len(self.imageList)} images.\\nSaved {count} JSON files."
         )
 
     # Support Functions
