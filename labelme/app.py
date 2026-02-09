@@ -951,6 +951,23 @@ class MainWindow(QtWidgets.QMainWindow):
         size = self.settings.value("window/size", QtCore.QSize(600, 500))
         position = self.settings.value("window/position", QtCore.QPoint(0, 0))
         state = self.settings.value("window/state", QtCore.QByteArray())
+        
+        # --- FIX START: Sanity check for off-screen window ---
+        # Get the geometry of all currently connected monitors
+        desktop = QtWidgets.QApplication.desktop()
+        is_visible = False
+
+        # Check if the saved position is within any of the current screens
+        for i in range(desktop.screenCount()):
+            if desktop.availableGeometry(i).contains(position):
+                is_visible = True
+                break
+
+        # If the position is off-screen (phantom monitor), reset to (0,0)
+        if not is_visible:
+            position = QtCore.QPoint(0, 0)
+        # --- FIX END ---
+
         self.resize(size)
         self.move(position)
         # or simply:
