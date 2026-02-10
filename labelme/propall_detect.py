@@ -3,6 +3,9 @@ from PIL import Image
 from typing import List, Tuple
 import numpy as np
 import os
+import json
+from pathlib import Path
+import sys
 
 # Get the directory where this propall_detect.py lives
 _THIS_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -13,38 +16,66 @@ _PARENT_DIR = os.path.abspath(os.path.join(_THIS_DIR, os.pardir))
 # Absolute path to the checkpoint
 MODEL_PATH = os.path.join(_PARENT_DIR, "model", "checkpoint_best_ema.pth")
 
-"""
-0 - bed
-1 - commode
-2 - diningtable
-3 - door
-4 - kitchencabinet
-5 - singlesofa
-6 - sofa
-7 - wall
-8 - wall2
-9 - wardrobe
-10 - window
-"""
+# Default configuration
+DEFAULT_CONFIG = {
+    "model_path": MODEL_PATH,
+    "class_names": {
+        0: "bed",
+        1: "commode",
+        2: "diningtable",
+        3: "door",
+        4: "singlesofa",
+        5: "sofa",
+        6: "wall",
+        7: "window"
+    }
+}
+
+def get_config_path():
+    """Get path to config file (next to executable or in user's home)"""
+    if getattr(sys, 'frozen', False):
+        # Running as compiled executable
+        app_dir = Path(sys.executable).parent
+    else:
+        # Running as script
+        app_dir = Path(__file__).parent
+    
+    return app_dir / "config.json"
+
+def load_config():
+    """Load configuration from file or create default"""
+    config_path = get_config_path()
+    
+    if config_path.exists():
+        with open(config_path, 'r') as f:
+            config = json.load(f)
+    else:
+        # Create default config file
+        config = DEFAULT_CONFIG
+        with open(config_path, 'w') as f:
+            json.dump(config, f, indent=4)
+        print(f"Created default config at: {config_path}")
+    
+    return config
+
+# Load configuration
+config = load_config()
+MODEL_PATH = config["model_path"]
+CLASS_NAMES = {int(k): v for k, v in config["class_names"].items()}
+
 
 # Map class IDs to human-readable labels
-# CLASS_NAMES = {
-#     0: "door",
-#     1: "wall",
-#     2: "window",
-#     3: "bed"
-# }
 
-CLASS_NAMES = {
-    0: "bed",
-    1: "commode",
-    2: "diningtable",
-    3: "door",
-    4: "singlesofa",
-    5: "sofa",
-    6: "wall",
-    7: "window"
-}
+# CLASS_NAMES = {
+#     0: "bed",
+#     1: "commode",
+#     2: "diningtable",
+#     3: "door",
+#     4: "singlesofa",
+#     5: "sofa",
+#     6: "wall",
+#     7: "window"
+# }
 
 # Initialize model only once (singleton pattern)
 _model = None
