@@ -36,6 +36,7 @@ from labelme.widgets import UniqueLabelQListWidget
 from labelme.widgets import ZoomWidget
 
 from . import utils
+from . import labelme_label_fixer
 
 # FIXME
 # - [medium] Set max zoom value to something big enough for FitWidth/Window
@@ -887,6 +888,32 @@ class MainWindow(QtWidgets.QMainWindow):
         detectAllButton.clicked.connect(self._run_detection_all)
         detectAllAction = QtWidgets.QWidgetAction(self)
         detectAllAction.setDefaultWidget(detectAllButton)
+
+        # Create Annotation Label Fixer Section (by Manjunadh)
+        labelFixerWidget = QtWidgets.QWidget()
+        labelFixerLayout = QtWidgets.QHBoxLayout(labelFixerWidget)
+        labelFixerLayout.setContentsMargins(0, 0, 0, 0)
+        
+        inputLayout = QtWidgets.QVBoxLayout()
+        inputLayout.setContentsMargins(0, 0, 0, 0)
+        inputLayout.setSpacing(0)
+        
+        self._oldLabelInput = QtWidgets.QLineEdit()
+        self._oldLabelInput.setPlaceholderText("old_label")
+        self._newLabelInput = QtWidgets.QLineEdit()
+        self._newLabelInput.setPlaceholderText("new_label")
+        
+        inputLayout.addWidget(self._oldLabelInput)
+        inputLayout.addWidget(self._newLabelInput)
+        
+        fixLabelBtn = QtWidgets.QPushButton("Fix Label")
+        fixLabelBtn.clicked.connect(self._fix_labels)
+        
+        labelFixerLayout.addLayout(inputLayout)
+        labelFixerLayout.addWidget(fixLabelBtn)
+        
+        labelFixerAction = QtWidgets.QWidgetAction(self)
+        labelFixerAction.setDefaultWidget(labelFixerWidget)
  
         self.tools = self.toolbar("Tools")
         self.actions.tool = (  # type: ignore[attr-defined]
@@ -913,6 +940,8 @@ class MainWindow(QtWidgets.QMainWindow):
             detectAllAction,
             None,
             ai_prompt_action,
+            None,
+            labelFixerAction,
         )
 
         self.statusBar().showMessage(str(self.tr("%s started.")) % __appname__)  # type: ignore[union-attr]
@@ -1176,6 +1205,44 @@ class MainWindow(QtWidgets.QMainWindow):
             "Batch Detection Complete",
             f"Processed {len(self.imageList)} images.\\nSaved {count} JSON files."
         )
+
+    def _fix_labels(self):
+        old_label = self._oldLabelInput.text()
+        new_label = self._newLabelInput.text()
+        
+        if not old_label or not new_label:
+             QtWidgets.QMessageBox.warning(self, "Input Error", "Please provide both old and new labels.")
+             return
+
+        folder_path = None
+        if self.filename:
+             folder_path = osp.dirname(self.filename)
+        elif self.lastOpenDir:
+             folder_path = self.lastOpenDir
+        
+        if not folder_path or not osp.isdir(folder_path):
+             QtWidgets.QMessageBox.warning(self, "Path Error", "No folder is currently open.")
+             return
+
+        reply = QtWidgets.QMessageBox.question(
+            self,
+            "Fix Labels",
+            f"Replace '{old_label}' with '{new_label}' in all JSON files in:\\n{folder_path}?\\nThis cannot be undone.",
+            QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No
+        )
+        
+        if reply == QtWidgets.QMessageBox.Yes:
+            try:
+                # Call the fixer
+                labelme_label_fixer.fix_labels_in_folder(folder_path, old_label, new_label)
+                QtWidgets.QMessageBox.information(self, "Success", "Label fixing complete. Check console for details.")
+                
+                # Reload current file to reflect changes
+                if self.filename:
+                     self.loadFile(self.filename)
+                     
+            except Exception as e:
+                QtWidgets.QMessageBox.critical(self, "Error", f"An error occurred: {str(e)}")
 
     # Support Functions
 
