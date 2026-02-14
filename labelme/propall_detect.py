@@ -17,6 +17,20 @@ _PARENT_DIR = os.path.abspath(os.path.join(_THIS_DIR, os.pardir))
 MODEL_PATH = os.path.join(_PARENT_DIR, "model", "checkpoint_best_ema.pth")
 
 # Default configuration
+# DEFAULT_CONFIG = {
+#     "model_path": MODEL_PATH,
+#     "class_names": {
+#         0: "bed",
+#         1: "commode",
+#         2: "diningtable",
+#         3: "door",
+#         4: "singlesofa",
+#         5: "sofa",
+#         6: "wall",
+#         7: "window"
+#     }
+# }
+
 DEFAULT_CONFIG = {
     "model_path": MODEL_PATH,
     "class_names": {
@@ -24,10 +38,13 @@ DEFAULT_CONFIG = {
         1: "commode",
         2: "diningtable",
         3: "door",
-        4: "singlesofa",
-        5: "sofa",
-        6: "wall",
-        7: "window"
+        4: "kitchencabinet",
+        5: "singlesofa",
+        6: "sofa",
+        7: "wall",
+        8: "wall2",
+        9: "wardrobe",
+        10: "window"
     }
 }
 

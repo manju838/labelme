@@ -1,0 +1,16 @@
+{
+    "model_path": "C:\\Users\\manju\\Desktop\\FloorplanCAD_Annotations\\Automated_labelme\\labelme\\model\\checkpoint_best_ema.pth",
+    "class_names": {
+        "0": "bed",
+        "1": "commode",
+        "2": "diningtable",
+        "3": "door",
+        "4": "kitchencabinet",
+        "5": "singlesofa",
+        "6": "sofa",
+        "7": "wall",
+        "8": "wall2",
+        "9": "wardrobe",
+        "10": "window"
+    }
+}
