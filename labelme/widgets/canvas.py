@@ -109,6 +109,7 @@ class Canvas(QtWidgets.QWidget):
         self._sam_embedding: collections.OrderedDict[
             bytes, osam.types.ImageEmbedding
         ] = collections.OrderedDict()
+        self.grabMode = False  # Track if grab mode (G key) is active
 
     def fillDrawing(self):
         return self._fill_drawing
@@ -913,7 +914,18 @@ class Canvas(QtWidgets.QWidget):
             elif modifiers == QtCore.Qt.AltModifier:  # type: ignore[attr-defined]
                 self.snapping = False
         elif self.editing():
-            if key == QtCore.Qt.Key_Up:  # type: ignore[attr-defined]
+            if key == QtCore.Qt.Key_G:  # type: ignore[attr-defined]
+                # Enable grab mode for selected shapes
+                if self.selectedShapes:
+                    # Get the cursor position and initialize movement from current position
+                    cursor_pos = self.mapFromGlobal(QtGui.QCursor.pos())
+                    self.prevPoint = self.transformPos(cursor_pos)
+                    # Calculate offsets for the bounding box of selected shapes
+                    self.calculateOffsets(self.prevPoint)
+                    # Change cursor to indicate grab mode
+                    self.overrideCursor(CURSOR_MOVE)
+                    self.repaint()
+            elif key == QtCore.Qt.Key_Up:  # type: ignore[attr-defined]
                 self.moveByKeyboard(QtCore.QPointF(0.0, -MOVE_SPEED))
             elif key == QtCore.Qt.Key_Down:  # type: ignore[attr-defined]
                 self.moveByKeyboard(QtCore.QPointF(0.0, MOVE_SPEED))

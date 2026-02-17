@@ -1797,8 +1797,15 @@ class MainWindow(QtWidgets.QMainWindow):
         self.pasteSelectedShape()
 
     def pasteSelectedShape(self):
+        # Store the number of shapes before pasting
+        num_shapes_before = len(self.canvas.shapes)
+        
         self.loadShapes(self._copied_shapes, replace=False)
         self.setDirty()
+        
+        # Select the newly pasted shapes (they're at the end of the shapes list)
+        newly_pasted_shapes = self.canvas.shapes[num_shapes_before:]
+        self.canvas.selectShapes(newly_pasted_shapes)
 
     def copySelectedShape(self):
         self._copied_shapes = [s.copy() for s in self.canvas.selectedShapes]
