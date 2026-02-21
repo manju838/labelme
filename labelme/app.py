@@ -3,6 +3,7 @@
 import functools
 import html
 import math
+import cv2
 import os
 import os.path as osp
 import re
@@ -914,6 +915,28 @@ class MainWindow(QtWidgets.QMainWindow):
         
         labelFixerAction = QtWidgets.QWidgetAction(self)
         labelFixerAction.setDefaultWidget(labelFixerWidget)
+
+        # Create OpenCV Template Matching Action (by Manjunadh)
+        templateMatchingWidget = QtWidgets.QWidget()
+        templateMatchingLayout = QtWidgets.QHBoxLayout(templateMatchingWidget)
+        templateMatchingLayout.setContentsMargins(0, 0, 0, 0)
+
+        templateMatchingButton = QtWidgets.QPushButton("OpenCV Template Matching")
+        templateMatchingButton.clicked.connect(self._run_template_matching)
+        templateMatchingButton.setEnabled(False)  # Disabled until a shape is selected
+        self.templateMatchingButton = templateMatchingButton
+
+        self.templateMatchingThresholdInput = QtWidgets.QLineEdit()
+        self.templateMatchingThresholdInput.setFixedWidth(40)
+        self.templateMatchingThresholdInput.setPlaceholderText("0.7")
+        self.templateMatchingThresholdInput.setText("0.7")
+        self.templateMatchingThresholdInput.setToolTip("Threshold (0.1 to 1.0)")
+
+        templateMatchingLayout.addWidget(templateMatchingButton)
+        templateMatchingLayout.addWidget(self.templateMatchingThresholdInput)
+
+        templateMatchingAction = QtWidgets.QWidgetAction(self)
+        templateMatchingAction.setDefaultWidget(templateMatchingWidget)
  
         self.tools = self.toolbar("Tools")
         self.actions.tool = (  # type: ignore[attr-defined]
@@ -942,6 +965,8 @@ class MainWindow(QtWidgets.QMainWindow):
             ai_prompt_action,
             None,
             labelFixerAction,
+            None,
+            templateMatchingAction,
         )
 
         self.statusBar().showMessage(str(self.tr("%s started.")) % __appname__)  # type: ignore[union-attr]
@@ -1203,8 +1228,162 @@ class MainWindow(QtWidgets.QMainWindow):
         QtWidgets.QMessageBox.information(
             self,
             "Batch Detection Complete",
-            f"Processed {len(self.imageList)} images.\\nSaved {count} JSON files."
+            f"Processed {len(self.imageList)} images.\nSaved {count} JSON files."
         )
+
+    def _compute_iou(self, box1, box2):
+        x1_1, y1_1, x2_1, y2_1 = box1
+        x1_2, y1_2, x2_2, y2_2 = box2
+
+        xi1 = max(x1_1, x1_2)
+        yi1 = max(y1_1, y1_2)
+        xi2 = min(x2_1, x2_2)
+        yi2 = min(y2_1, y2_2)
+
+        inter_area = max(0, xi2 - xi1) * max(0, yi2 - yi1)
+
+        box1_area = (x2_1 - x1_1) * (y2_1 - y1_1)
+        box2_area = (x2_2 - x1_2) * (y2_2 - y1_2)
+
+        union_area = box1_area + box2_area - inter_area
+        if union_area == 0:
+            return 0
+        return inter_area / union_area
+
+    def _run_template_matching(self):
+        if not self.imagePath and not self.imageData:
+            return
+
+        selected_shapes = self.canvas.selectedShapes
+        if len(selected_shapes) != 1:
+            QtWidgets.QMessageBox.warning(
+                self,
+                self.tr("Warning"),
+                self.tr("Please select exactly one bounding box as a template."),
+            )
+            return
+
+        shape = selected_shapes[0]
+        if shape.shape_type != "rectangle":
+            QtWidgets.QMessageBox.warning(
+                self,
+                self.tr("Warning"),
+                self.tr("Only rectangle shapes are supported for template matching."),
+            )
+            return
+
+        # Get crop coordinates
+        p1 = shape.points[0]
+        p2 = shape.points[1]
+        xmin, xmax = int(min(p1.x(), p2.x())), int(max(p1.x(), p2.x()))
+        ymin, ymax = int(min(p1.y(), p2.y())), int(max(p1.y(), p2.y()))
+
+        # Read image using OpenCV - Prefer self.imageData (in-memory) for robustness
+        try:
+            if self.imageData:
+                nparr = np.frombuffer(self.imageData, np.uint8)
+                img_bgr = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+            else:
+                img_bgr = cv2.imread(self.imagePath)
+            
+            if img_bgr is None:
+                raise Exception("Failed to load/decode image.")
+        except Exception as e:
+            QtWidgets.QMessageBox.warning(
+                self,
+                self.tr("Error"),
+                self.tr(f"Could not read image for template matching: {e}"),
+            )
+            return
+
+        img_gray = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2GRAY)
+        template_gray = img_gray[ymin:ymax, xmin:xmax]
+
+        if template_gray.size == 0:
+            QtWidgets.QMessageBox.warning(
+                self,
+                self.tr("Error"),
+                self.tr("Selected template area is empty (size 0)."),
+            )
+            return
+
+        # Read threshold from input
+        try:
+            threshold = float(self.templateMatchingThresholdInput.text().strip())
+        except ValueError:
+            threshold = 0.7
+            self.templateMatchingThresholdInput.setText("0.7")
+
+        detected_boxes = []
+
+        curr_template = template_gray
+        for i in range(4):
+            if i > 0:
+                curr_template = cv2.rotate(curr_template, cv2.ROTATE_90_CLOCKWISE)
+
+            tw, th = curr_template.shape[::-1]
+            if tw > img_gray.shape[1] or th > img_gray.shape[0]:
+                continue
+
+            res = cv2.matchTemplate(img_gray, curr_template, cv2.TM_CCOEFF_NORMED)
+            loc = np.where(res >= threshold)
+
+            for pt in zip(*loc[::-1]):  # pt is (x, y)
+                # OpenCV groupRectangles expects [x, y, w, h]
+                detected_boxes.append([int(pt[0]), int(pt[1]), int(tw), int(th)])
+
+        if not detected_boxes:
+            QtWidgets.QMessageBox.information(
+                self,
+                self.tr("Information"),
+                self.tr("No matches found above 70% confidence."),
+            )
+            return
+
+        # Simple NMS using groupRectangles (groupThreshold=1 merges overlapping detections)
+        rects, weights = cv2.groupRectangles(np.array(detected_boxes).tolist(), 1, 0.2)
+
+        new_shapes = []
+        for x, y, w, h in rects:
+            x1, y1, x2, y2 = x, y, x + w, y + h
+            # Check if this box is significantly different from existing shapes to avoid duplicates
+            is_duplicate = False
+            for s in self.canvas.shapes:
+                if s.shape_type == "rectangle":
+                    sp1 = s.points[0]
+                    sp2 = s.points[1]
+                    sxmin, sxmax = min(sp1.x(), sp2.x()), max(sp1.x(), sp2.x())
+                    symin, symax = min(sp1.y(), sp2.y()), max(sp1.y(), sp2.y())
+
+                    # Compute IoU
+                    iou = self._compute_iou((x1, y1, x2, y2), (sxmin, symin, sxmax, symax))
+                    if iou > 0.6: # Stricter duplicate check
+                        is_duplicate = True
+                        break
+
+            if not is_duplicate:
+                new_shape = Shape(label=shape.label, shape_type="rectangle")
+                new_shape.addPoint(QtCore.QPointF(x1, y1))
+                new_shape.addPoint(QtCore.QPointF(x2, y2))
+                new_shapes.append(new_shape)
+
+        if new_shapes:
+            self.canvas.storeShapes()
+            self.loadShapes(new_shapes, replace=False)
+            self.setDirty()
+            self.statusBar().showMessage(self.tr("Successfully added %d matched annotations.") % len(new_shapes))
+            QtWidgets.QMessageBox.information(
+                self,
+                self.tr("Done"),
+                self.tr("Template matching complete. Added %d new annotations.") % len(new_shapes),
+            )
+        else:
+            self.statusBar().showMessage(self.tr("No new (unique) matches added."))
+            QtWidgets.QMessageBox.information(
+                self,
+                self.tr("Information"),
+                self.tr("No new matches found. (All matches were already annotated)"),
+            )
 
     def _fix_labels(self):
         old_label = self._oldLabelInput.text()
@@ -1621,6 +1800,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self.actions.duplicate.setEnabled(n_selected)  # type: ignore[attr-defined]
         self.actions.copy.setEnabled(n_selected)  # type: ignore[attr-defined]
         self.actions.edit.setEnabled(n_selected)  # type: ignore[attr-defined]
+        is_single_rectangle = n_selected == 1 and selected_shapes[0].shape_type == "rectangle"
+        self.templateMatchingButton.setEnabled(is_single_rectangle)
+        self.templateMatchingThresholdInput.setEnabled(is_single_rectangle)
 
     def addLabel(self, shape):
         if shape.group_id is None:
