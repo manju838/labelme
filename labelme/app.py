@@ -923,8 +923,9 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # Create OpenCV Template Matching Action (by Manjunadh)
         templateMatchingWidget = QtWidgets.QWidget()
-        templateMatchingLayout = QtWidgets.QHBoxLayout(templateMatchingWidget)
+        templateMatchingLayout = QtWidgets.QVBoxLayout(templateMatchingWidget)
         templateMatchingLayout.setContentsMargins(0, 0, 0, 0)
+        templateMatchingLayout.setSpacing(2)
 
         templateMatchingButton = QtWidgets.QPushButton("OpenCV Template Matching")
         templateMatchingButton.clicked.connect(self._run_template_matching)
@@ -936,9 +937,10 @@ class MainWindow(QtWidgets.QMainWindow):
         self.templateMatchingThresholdInput.setPlaceholderText("0.7")
         self.templateMatchingThresholdInput.setText("0.7")
         self.templateMatchingThresholdInput.setToolTip("Threshold (0.1 to 1.0)")
+        self.templateMatchingThresholdInput.setAlignment(Qt.AlignCenter)
 
-        templateMatchingLayout.addWidget(templateMatchingButton)
-        templateMatchingLayout.addWidget(self.templateMatchingThresholdInput)
+        templateMatchingLayout.addWidget(templateMatchingButton, 0, Qt.AlignCenter)
+        templateMatchingLayout.addWidget(self.templateMatchingThresholdInput, 0, Qt.AlignCenter)
 
         templateMatchingAction = QtWidgets.QWidgetAction(self)
         templateMatchingAction.setDefaultWidget(templateMatchingWidget)
