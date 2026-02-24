@@ -878,17 +878,22 @@ class MainWindow(QtWidgets.QMainWindow):
         classSelectAction.setDefaultWidget(classSelectBtn)
         
         ################
-        # Create the Detect button (by Manjunadh)
+        # Create a container for vertical layout of Detect and Detect All buttons (by Manjunadh)
         detectButton = QtWidgets.QPushButton("Detect")
         detectButton.clicked.connect(self._run_detection)
-        detectAction = QtWidgets.QWidgetAction(self)
-        detectAction.setDefaultWidget(detectButton)
-
-        # Create the Detect All button (by Manjunadh)
+        
         detectAllButton = QtWidgets.QPushButton("Detect All")
         detectAllButton.clicked.connect(self._run_detection_all)
-        detectAllAction = QtWidgets.QWidgetAction(self)
-        detectAllAction.setDefaultWidget(detectAllButton)
+        
+        detectButtonsWidget = QtWidgets.QWidget()
+        detectButtonsLayout = QtWidgets.QVBoxLayout(detectButtonsWidget)
+        detectButtonsLayout.setContentsMargins(0, 0, 0, 0)
+        detectButtonsLayout.setSpacing(2)
+        detectButtonsLayout.addWidget(detectButton)
+        detectButtonsLayout.addWidget(detectAllButton)
+        
+        detectAction = QtWidgets.QWidgetAction(self)
+        detectAction.setDefaultWidget(detectButtonsWidget)
 
         # Create Annotation Label Fixer Section (by Manjunadh)
         labelFixerWidget = QtWidgets.QWidget()
@@ -960,7 +965,6 @@ class MainWindow(QtWidgets.QMainWindow):
             selectAiModel,
             classSelectAction,  # ✅ Class selector added BEFORE detect
             detectAction, # This is linked to the dropdown for AI models and independent of the prompt based AI detection, using the QWidgetAction wrapping the button and not the btn itself
-            detectAllAction,
             None,
             ai_prompt_action,
             None,
