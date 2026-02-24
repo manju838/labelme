@@ -816,6 +816,8 @@ class MainWindow(QtWidgets.QMainWindow):
         
         #
         self._selectAiModelComboBox = QtWidgets.QComboBox() # create a drop-down menu (QComboBox) to pick an AI model.
+        self._selectAiModelComboBox.setMinimumWidth(160)
+        self._selectAiModelComboBox.setMaximumWidth(200)
         selectAiModel.defaultWidget().layout().addWidget(self._selectAiModelComboBox)  # type: ignore[union-attr] # link the dropdown with the widget in Tools bar
         MODEL_NAMES: list[tuple[str, str]] = [
             ("efficientsam:10m", "EfficientSam (speed)"),
@@ -857,25 +859,55 @@ class MainWindow(QtWidgets.QMainWindow):
         ai_prompt_action.setDefaultWidget(self._ai_prompt_widget)
         
         ################
-        # Create a Class Selection (checkbox dropdown) by Manjunadh
-        self._selectedClasses = set(get_all_class_names())  # All classes selected by default
-        classMenu = QtWidgets.QMenu()
-        self._classCheckboxes = {}
-        for class_name in get_all_class_names():
-            action = QtWidgets.QAction(class_name, classMenu)
-            action.setCheckable(True)
-            action.setChecked(True)
-            action.toggled.connect(lambda checked, name=class_name: self._toggle_class(name, checked))
-            classMenu.addAction(action)
-            self._classCheckboxes[class_name] = action
+        # Create a Class Selection (QComboBox with checkable items) by Manjunadh
+        class_names = get_all_class_names()
+        self._selectedClasses = set(class_names)  # All classes selected by default
 
-        classSelectBtn = QtWidgets.QToolButton()
-        classSelectBtn.setText("Classes")
-        classSelectBtn.setPopupMode(QtWidgets.QToolButton.InstantPopup)
-        classSelectBtn.setMenu(classMenu)
+        self._classComboBox = QtWidgets.QComboBox()
+        classModel = QtGui.QStandardItemModel(self._classComboBox)
+
+        for class_name in class_names:
+            item = QtGui.QStandardItem(class_name)
+            item.setFlags(Qt.ItemIsUserCheckable | Qt.ItemIsEnabled)
+            item.setData(Qt.Checked, Qt.CheckStateRole)
+            classModel.appendRow(item)
+
+        self._classComboBox.setModel(classModel)
+        self._classComboBox.setCurrentIndex(-1)
+        self._classComboBox.setEditable(True)
+        self._classComboBox.lineEdit().setReadOnly(True)
+        self._classComboBox.lineEdit().setPlaceholderText("Classes (All)")
+        self._classComboBox.lineEdit().setAlignment(Qt.AlignCenter)
+        self._classComboBox.setMinimumWidth(120)
+        self._classComboBox.setMaximumWidth(160)
+
+        def _on_class_item_changed(item):
+            name = item.text()
+            if item.checkState() == Qt.Checked:
+                self._selectedClasses.add(name)
+            else:
+                self._selectedClasses.discard(name)
+            checked_count = sum(
+                1 for i in range(classModel.rowCount())
+                if classModel.item(i).checkState() == Qt.Checked
+            )
+            total = classModel.rowCount()
+            self._classComboBox.lineEdit().setText(
+                "Classes (All)" if checked_count == total else f"Classes ({checked_count}/{total})"
+            )
+
+        classModel.itemChanged.connect(_on_class_item_changed)
 
         classSelectAction = QtWidgets.QWidgetAction(self)
-        classSelectAction.setDefaultWidget(classSelectBtn)
+        classSelectWidget = QtWidgets.QWidget()
+        classSelectLayout = QtWidgets.QVBoxLayout(classSelectWidget)
+        classSelectLayout.setContentsMargins(2, 2, 2, 2)
+        classSelectLayout.setSpacing(1)
+        classSelectLabel = QtWidgets.QLabel("Classes")
+        classSelectLabel.setAlignment(QtCore.Qt.AlignCenter)
+        classSelectLayout.addWidget(classSelectLabel)
+        classSelectLayout.addWidget(self._classComboBox)
+        classSelectAction.setDefaultWidget(classSelectWidget)
         
         ################
         # Create a container for vertical layout of Detect and Detect All buttons (by Manjunadh)
@@ -1052,13 +1084,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.zoomWidget.valueChanged.connect(self.paintCanvas)
 
         self.populateModeActions()
-
-    def _toggle_class(self, class_name: str, checked: bool):
-        if checked:
-            self._selectedClasses.add(class_name)
-        else:
-            self._selectedClasses.discard(class_name)
-
 
     def menu(self, title, actions=None):
         menu = self.menuBar().addMenu(title)  # type: ignore[union-attr]
