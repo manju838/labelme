@@ -807,18 +807,22 @@ class MainWindow(QtWidgets.QMainWindow):
         )
 
         selectAiModel = QtWidgets.QWidgetAction(self)
-        selectAiModel.setDefaultWidget(QtWidgets.QWidget())
-        selectAiModel.defaultWidget().setLayout(QtWidgets.QVBoxLayout())  # type: ignore[union-attr]
+        selectAiModelWidget = QtWidgets.QWidget()
+        selectAiModelLayout = QtWidgets.QVBoxLayout(selectAiModelWidget)
+        selectAiModelLayout.setContentsMargins(4, 2, 4, 2)
+        selectAiModelLayout.setSpacing(2)
+        selectAiModelLayout.setAlignment(Qt.AlignVCenter)
+        selectAiModel.setDefaultWidget(selectAiModelWidget)
         #
         selectAiModelLabel = QtWidgets.QLabel(self.tr("Select AI Model"))
         selectAiModelLabel.setAlignment(QtCore.Qt.AlignCenter)  # type: ignore[attr-defined]
-        selectAiModel.defaultWidget().layout().addWidget(selectAiModelLabel)  # type: ignore[union-attr]
-        
+        selectAiModelLayout.addWidget(selectAiModelLabel)
         #
         self._selectAiModelComboBox = QtWidgets.QComboBox() # create a drop-down menu (QComboBox) to pick an AI model.
         self._selectAiModelComboBox.setMinimumWidth(160)
         self._selectAiModelComboBox.setMaximumWidth(200)
-        selectAiModel.defaultWidget().layout().addWidget(self._selectAiModelComboBox)  # type: ignore[union-attr] # link the dropdown with the widget in Tools bar
+        selectAiModelLayout.addWidget(self._selectAiModelComboBox)        
+        
         MODEL_NAMES: list[tuple[str, str]] = [
             ("efficientsam:10m", "EfficientSam (speed)"),
             ("efficientsam:latest", "EfficientSam (accuracy)"),
@@ -901,8 +905,9 @@ class MainWindow(QtWidgets.QMainWindow):
         classSelectAction = QtWidgets.QWidgetAction(self)
         classSelectWidget = QtWidgets.QWidget()
         classSelectLayout = QtWidgets.QVBoxLayout(classSelectWidget)
-        classSelectLayout.setContentsMargins(2, 2, 2, 2)
-        classSelectLayout.setSpacing(1)
+        classSelectLayout.setContentsMargins(4, 2, 4, 2)
+        classSelectLayout.setSpacing(2)
+        classSelectLayout.setAlignment(Qt.AlignVCenter)
         classSelectLabel = QtWidgets.QLabel("Classes")
         classSelectLabel.setAlignment(QtCore.Qt.AlignCenter)
         classSelectLayout.addWidget(classSelectLabel)
