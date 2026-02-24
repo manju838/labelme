@@ -943,17 +943,20 @@ class MainWindow(QtWidgets.QMainWindow):
         
         self._oldLabelInput = QtWidgets.QLineEdit()
         self._oldLabelInput.setPlaceholderText("old_label")
+        self._oldLabelInput.setFixedWidth(150)
         self._newLabelInput = QtWidgets.QLineEdit()
         self._newLabelInput.setPlaceholderText("new_label")
+        self._newLabelInput.setFixedWidth(150)
         
         inputLayout.addWidget(self._oldLabelInput)
         inputLayout.addWidget(self._newLabelInput)
         
         fixLabelBtn = QtWidgets.QPushButton("Fix Label")
         fixLabelBtn.clicked.connect(self._fix_labels)
-        
+
         labelFixerLayout.addLayout(inputLayout)
         labelFixerLayout.addWidget(fixLabelBtn)
+        labelFixerLayout.addStretch()
         
         labelFixerAction = QtWidgets.QWidgetAction(self)
         labelFixerAction.setDefaultWidget(labelFixerWidget)
