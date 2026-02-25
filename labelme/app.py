@@ -954,8 +954,18 @@ class MainWindow(QtWidgets.QMainWindow):
         fixLabelBtn = QtWidgets.QPushButton("Fix Label")
         fixLabelBtn.clicked.connect(self._fix_labels)
 
+        deleteClassBtn = QtWidgets.QPushButton("Delete Class")
+        deleteClassBtn.clicked.connect(self._delete_class)
+
+        fixDeleteBtnsWidget = QtWidgets.QWidget()
+        fixDeleteBtnsLayout = QtWidgets.QVBoxLayout(fixDeleteBtnsWidget)
+        fixDeleteBtnsLayout.setContentsMargins(0, 0, 0, 0)
+        fixDeleteBtnsLayout.setSpacing(2)
+        fixDeleteBtnsLayout.addWidget(fixLabelBtn)
+        fixDeleteBtnsLayout.addWidget(deleteClassBtn)
+
         labelFixerLayout.addLayout(inputLayout)
-        labelFixerLayout.addWidget(fixLabelBtn)
+        labelFixerLayout.addWidget(fixDeleteBtnsWidget)
         labelFixerLayout.addStretch()
         
         labelFixerAction = QtWidgets.QWidgetAction(self)
@@ -1461,6 +1471,33 @@ class MainWindow(QtWidgets.QMainWindow):
                      
             except Exception as e:
                 QtWidgets.QMessageBox.critical(self, "Error", f"An error occurred: {str(e)}")
+
+    def _delete_class(self):
+        old_label = self._oldLabelInput.text().strip()
+
+        if not old_label:
+            QtWidgets.QMessageBox.warning(self, "Input Error", "Please provide the label to delete in the 'old_label' field.")
+            return
+
+        shapes_to_remove = [s for s in self.canvas.shapes if s.label == old_label]
+
+        if not shapes_to_remove:
+            QtWidgets.QMessageBox.information(self, "Delete Class", f"No bounding boxes with label '{old_label}' found in the current image.")
+            return
+
+        reply = QtWidgets.QMessageBox.question(
+            self,
+            "Delete Class",
+            f"Delete {len(shapes_to_remove)} bounding box(es) with label '{old_label}' from the current image?",
+            QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
+        )
+
+        if reply == QtWidgets.QMessageBox.Yes:
+            for shape in shapes_to_remove:
+                self.canvas.deleteShape(shape)
+            self.remLabels(shapes_to_remove)
+            self.setDirty()
+            logger.info(f"Deleted {len(shapes_to_remove)} shape(s) with label '{old_label}'.")
 
     # Support Functions
 
