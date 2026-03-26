@@ -2,6 +2,7 @@
 
 import functools
 import html
+import json
 import math
 import cv2
 import os
@@ -52,11 +53,11 @@ LABEL_COLORMAP = imgviz.label_colormap()
 from labelme.propall_detect import predict_on_image, get_class_name, get_all_class_names
 from PyQt5.QtCore import QPointF
 
-def detections_to_shapes(detections):
+def detections_to_shapes(detections, model_name="RFDETRLarge"):
     shapes = []
     for xyxy, class_id, confidence in detections:
         x1, y1, x2, y2 = xyxy
-        label = get_class_name(class_id)
+        label = get_class_name(class_id, model_name)
 
         shape = Shape(
             label=label,
@@ -832,7 +833,8 @@ class MainWindow(QtWidgets.QMainWindow):
             ("sam2:small", "Sam2 (speed)"),
             ("sam2:latest", "Sam2 (balanced)"),
             ("sam2:large", "Sam2 (accuracy)"),
-            ("RFDETRLarge", "Propall RFDeTR Large")
+            ("RFDETRLarge", "Propall RFDeTR Large"),
+            ("RFDETRSmall", "Commercial RFDETRSmall")
         ]
         # Add the available models to the dropdown that is attached to the Tools bar widget
         for model_name, model_ui_name in MODEL_NAMES:
@@ -915,7 +917,11 @@ class MainWindow(QtWidgets.QMainWindow):
         classSelectAction.setDefaultWidget(classSelectWidget)
         
         ################
-        # Create a container for vertical layout of Detect and Detect All buttons (by Manjunadh)
+        # Create a container for vertical layout of Reset, Detect and Detect All buttons (by Manjunadh)
+        self._resetDetectionCheckbox = QtWidgets.QCheckBox("Reset")
+        self._resetDetectionCheckbox.setChecked(True)
+        self._resetDetectionCheckbox.setToolTip("Clear existing detections before running new detection")
+
         detectButton = QtWidgets.QPushButton("Detect")
         detectButton.clicked.connect(self._run_detection)
         
@@ -926,6 +932,7 @@ class MainWindow(QtWidgets.QMainWindow):
         detectButtonsLayout = QtWidgets.QVBoxLayout(detectButtonsWidget)
         detectButtonsLayout.setContentsMargins(0, 0, 0, 0)
         detectButtonsLayout.setSpacing(2)
+        detectButtonsLayout.addWidget(self._resetDetectionCheckbox) # Add Reset Checkbox
         detectButtonsLayout.addWidget(detectButton)
         detectButtonsLayout.addWidget(detectAllButton)
         
@@ -1125,11 +1132,11 @@ class MainWindow(QtWidgets.QMainWindow):
         
         print(f"Selected model: {model_name}")
 
-        if model_name != "RFDETRLarge":
+        if model_name not in ["RFDETRLarge", "RFDETRSmall"]:
             QtWidgets.QMessageBox.information(
                 self,
                 "Model Not Supported",
-                f"Auto-detection only supported for 'Propall RFDeTR Large'."
+                f"Auto-detection only supported for 'Propall RFDeTR Large' and 'Commercial RFDETRSmall'."
             )
             return
 
@@ -1141,7 +1148,7 @@ class MainWindow(QtWidgets.QMainWindow):
             )
             return
 
-        detections = predict_on_image(self.filename, threshold=0.4)
+        detections = predict_on_image(self.filename, model_name=model_name, threshold=0.4)
 
         if not detections:
             QtWidgets.QMessageBox.information(
@@ -1154,7 +1161,7 @@ class MainWindow(QtWidgets.QMainWindow):
         ################# Snippet to Select classes
         detections = [
             det for det in detections
-            if get_class_name(det[1]) in self._selectedClasses
+            if get_class_name(det[1], model_name) in self._selectedClasses
         ]
 
         if not detections:
@@ -1166,10 +1173,10 @@ class MainWindow(QtWidgets.QMainWindow):
             return
         #################
 
-        shapes = detections_to_shapes(detections)
+        shapes = detections_to_shapes(detections, model_name=model_name)
         
         self.canvas.storeShapes()
-        self.loadShapes(shapes, replace=False)
+        self.loadShapes(shapes, replace=self._resetDetectionCheckbox.isChecked())
         self.setDirty()
 
         QtWidgets.QMessageBox.information(
@@ -1182,11 +1189,11 @@ class MainWindow(QtWidgets.QMainWindow):
         model_name = self._selectAiModelComboBox.currentData()
         print(f"Selected model: {model_name}")
 
-        if model_name != "RFDETRLarge":
+        if model_name not in ["RFDETRLarge", "RFDETRSmall"]:
             QtWidgets.QMessageBox.information(
                 self,
                 "Model Not Supported",
-                f"Auto-detection only supported for 'Propall RFDeTR Large'."
+                f"Auto-detection only supported for 'Propall RFDeTR Large' and 'Commercial RFDETRSmall'."
             )
             return
 
@@ -1198,10 +1205,13 @@ class MainWindow(QtWidgets.QMainWindow):
             )
             return
 
+        reset_mode = self._resetDetectionCheckbox.isChecked()
+        mode_text = "overwrite" if reset_mode else "append to"
+
         reply = QtWidgets.QMessageBox.question(
             self,
             "Run Detection on All Images?",
-            f"This will run detection on {len(self.imageList)} images and save/overwrite .json files.\\nAre you sure?",
+            f"This will run detection on {len(self.imageList)} images and {mode_text} existing .json files.\nAre you sure?",
             QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No
         )
         if reply != QtWidgets.QMessageBox.Yes:
@@ -1218,20 +1228,20 @@ class MainWindow(QtWidgets.QMainWindow):
             progress.setValue(i)
             
             try:
-                detections = predict_on_image(filename, threshold=0.4)
+                detections = predict_on_image(filename, model_name=model_name, threshold=0.4)
             except Exception as e:
                 logger.error(f"Failed to predict on {filename}: {e}")
                 continue
 
             filtered_detections = [
                 det for det in detections
-                if get_class_name(det[1]) in self._selectedClasses
+                if get_class_name(det[1], model_name) in self._selectedClasses
             ]
             
             if not filtered_detections:
                 continue
 
-            shapes = detections_to_shapes(filtered_detections)
+            shapes = detections_to_shapes(filtered_detections, model_name=model_name)
             
             try:
                 img = imgviz.io.imread(filename)
@@ -1242,9 +1252,9 @@ class MainWindow(QtWidgets.QMainWindow):
                     with open(filename, "rb") as f:
                         imageData = f.read()
 
-                shapes_json = []
+                new_shapes_json = []
                 for s in shapes:
-                    shapes_json.append(dict(
+                    new_shapes_json.append(dict(
                         label=s.label,
                         points=[(p.x(), p.y()) for p in s.points],
                         group_id=s.group_id,
@@ -1253,9 +1263,20 @@ class MainWindow(QtWidgets.QMainWindow):
                         flags=s.flags,
                         mask=None
                     ))
-                
+
                 json_filename = osp.splitext(filename)[0] + ".json"
-                
+
+                if not reset_mode and osp.exists(json_filename):
+                    try:
+                        with open(json_filename, "r") as f:
+                            existing_data = json.load(f)
+                        shapes_json = existing_data.get("shapes", []) + new_shapes_json
+                    except Exception as e:
+                        logger.warning(f"Could not load existing annotations from {json_filename}: {e}")
+                        shapes_json = new_shapes_json
+                else:
+                    shapes_json = new_shapes_json
+
                 lf = LabelFile()
                 lf.save(
                     filename=json_filename,
@@ -1940,6 +1961,8 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def loadShapes(self, shapes, replace=True):
         self._noSelectionSlot = True
+        if replace:
+            self.labelList.clear()
         for shape in shapes:
             self.addLabel(shape)
         self.labelList.clearSelection()

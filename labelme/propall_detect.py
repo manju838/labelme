@@ -1,6 +1,6 @@
-from rfdetr import RFDETRLarge  # assuming you have this defined somewhere
+from rfdetr import RFDETRLarge, RFDETRSmall
 from PIL import Image
-from typing import List, Tuple
+from typing import List, Tuple, Dict
 import numpy as np
 import os
 import json
@@ -13,40 +13,50 @@ _THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 # Go one directory up
 _PARENT_DIR = os.path.abspath(os.path.join(_THIS_DIR, os.pardir))
 
-# Absolute path to the checkpoint
-MODEL_PATH = os.path.join(_PARENT_DIR, "model", "checkpoint_best_ema.pth")
+# Absolute paths to checkpoints
+MODEL_PATH_LARGE = os.path.join(_PARENT_DIR, "model", "checkpoint_best_ema.pth")
+MODEL_PATH_SMALL = os.path.join(_PARENT_DIR, "model", "commercial_128img_checkpoint_best_ema.pth")
 
-# Default configuration
-# DEFAULT_CONFIG = {
-#     "model_path": MODEL_PATH,
-#     "class_names": {
-#         0: "bed",
-#         1: "commode",
-#         2: "diningtable",
-#         3: "door",
-#         4: "singlesofa",
-#         5: "sofa",
-#         6: "wall",
-#         7: "window"
-#     }
-# }
-
-DEFAULT_CONFIG = {
-    "model_path": MODEL_PATH,
-    "class_names": {
-        0: "bed",
-        1: "commode",
-        2: "diningtable",
-        3: "door",
-        4: "kitchencabinet",
-        5: "singlesofa",
-        6: "sofa",
-        7: "wall",
-        8: "wall2",
-        9: "wardrobe",
-        10: "window"
+# Default configurations for each model type
+MODEL_CONFIGS: Dict[str, Dict] = {
+    "RFDETRLarge": {
+        "model_path": MODEL_PATH_LARGE,
+        "class_names": {
+            0: "bed",
+            1: "commode",
+            2: "diningtable",
+            3: "door",
+            4: "kitchencabinet",
+            5: "singlesofa",
+            6: "sofa",
+            7: "wall",
+            8: "wardrobe",
+            9: "window"
+        }
+    },
+    "RFDETRSmall": {
+        "model_path": MODEL_PATH_SMALL,
+        "class_names": {
+            0: "bed",
+            1: "cabintable",
+            2: "circulartable",
+            3: "commode",
+            4: "conferencetable",
+            5: "diningtable",
+            6: "door",
+            7: "kitchencabinet",
+            8: "singlesofa",
+            9: "sofa",
+            10: "wall",
+            11: "wardrobe",
+            12: "window",
+            13: "workstation"
+        }
     }
 }
+
+# For backward compatibility and initial loading
+DEFAULT_CONFIG = MODEL_CONFIGS["RFDETRLarge"]
 
 def get_config_path():
     """Get path to config file (next to executable or in user's home)"""
@@ -75,43 +85,35 @@ def load_config():
     
     return config
 
-# Load configuration
+# Load initial configuration (primarily for backward compatibility if needed)
 config = load_config()
-MODEL_PATH = config["model_path"]
-CLASS_NAMES = {int(k): v for k, v in config["class_names"].items()}
 
+# Global model cache (singleton pattern for each model type)
+_models: Dict[str, object] = {}
 
-# Map class IDs to human-readable labels
+def _load_model(model_name: str = "RFDETRLarge"):
+    global _models
+    if model_name not in _models:
+        if model_name == "RFDETRLarge":
+            path = MODEL_CONFIGS["RFDETRLarge"]["model_path"]
+            _models[model_name] = RFDETRLarge(pretrain_weights=path)
+        elif model_name == "RFDETRSmall":
+            path = MODEL_CONFIGS["RFDETRSmall"]["model_path"]
+            _models[model_name] = RFDETRSmall(pretrain_weights=path)
+        else:
+            raise ValueError(f"Unknown model name: {model_name}")
+    return _models[model_name]
 
-# CLASS_NAMES = {
-#     0: "bed",
-#     1: "commode",
-#     2: "diningtable",
-#     3: "door",
-#     4: "singlesofa",
-#     5: "sofa",
-#     6: "wall",
-#     7: "window"
-# }
-
-# Initialize model only once (singleton pattern)
-_model = None
-
-def _load_model():
-    global _model
-    if _model is None:
-        _model = RFDETRLarge(pretrain_weights=MODEL_PATH)
-    return _model
-
-def predict_on_image(image_path: str, threshold: float = 0.5) -> List[Tuple[np.ndarray, int, float]]:
+def predict_on_image(image_path: str, model_name: str = "RFDETRLarge", threshold: float = 0.5) -> List[Tuple[np.ndarray, int, float]]:
     """
     Runs RFDeTR on the given image and returns bounding boxes.
 
     :param image_path: Path to input image.
+    :param model_name: Name of the model to use ("RFDETRLarge" or "RFDETRSmall").
     :param threshold: Minimum confidence to keep a detection.
     :return: List of detections as (xyxy, class_id, confidence).
     """
-    model = _load_model()
+    model = _load_model(model_name)
 
     image = Image.open(image_path).convert("RGB")
 
@@ -127,9 +129,18 @@ def predict_on_image(image_path: str, threshold: float = 0.5) -> List[Tuple[np.n
 
     return detections
 
-def get_class_name(class_id: int) -> str:
-    return CLASS_NAMES.get(class_id, f"class_{class_id}")
+def get_class_name(class_id: int, model_name: str = "RFDETRLarge") -> str:
+    configs = MODEL_CONFIGS.get(model_name, MODEL_CONFIGS["RFDETRLarge"])
+    return configs["class_names"].get(class_id, f"class_{class_id}")
 
-def get_all_class_names() -> list[str]:
-    return list(CLASS_NAMES.values())
+def get_all_model_class_names() -> Dict[str, List[str]]:
+    """Returns all class names for all supported models."""
+    return {name: list(cfg["class_names"].values()) for name, cfg in MODEL_CONFIGS.items()}
+
+def get_all_class_names() -> List[str]:
+    """Returns a unique list of all class names from all models."""
+    all_names = set()
+    for cfg in MODEL_CONFIGS.values():
+        all_names.update(cfg["class_names"].values())
+    return sorted(list(all_names))
 
