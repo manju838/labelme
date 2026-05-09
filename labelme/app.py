@@ -69,6 +69,53 @@ def detections_to_shapes(detections, model_name="RFDETRLarge"):
         shapes.append(shape)
     return shapes
 
+
+class TimerWheel(QtWidgets.QWidget):
+    def __init__(self, parent=None, max_time=40):
+        super().__init__(parent)
+        self.max_time = max_time
+        self.current_time = max_time
+        self.setFixedSize(50, 50)
+
+    def setTime(self, current_time):
+        self.current_time = current_time
+        self.update()
+
+    def paintEvent(self, event):
+        painter = QtGui.QPainter(self)
+        painter.setRenderHint(QtGui.QPainter.Antialiasing)
+
+        width = self.width()
+        height = self.height()
+        thickness = 4
+        
+        rect = QtCore.QRectF(thickness, thickness, width - 2*thickness, height - 2*thickness)
+        
+        # Draw background track
+        painter.setPen(QtGui.QPen(QtGui.QColor("#ECF0F1"), thickness, Qt.SolidLine, Qt.RoundCap))
+        painter.drawEllipse(rect)
+
+        # Draw progress
+        if self.current_time > 0:
+            # Start from top (90 degrees) and go clockwise
+            span_angle = int(-(self.current_time / self.max_time) * 360 * 16)
+            
+            color = QtGui.QColor("#2ECC71") # Green
+            if self.current_time <= 10:
+                color = QtGui.QColor("#E74C3C") # Red
+                
+            painter.setPen(QtGui.QPen(color, thickness, Qt.SolidLine, Qt.RoundCap))
+            painter.drawArc(rect, 90 * 16, span_angle)
+
+        # Draw text
+        painter.setPen(QtGui.QColor("#2C3E50"))
+        font = painter.font()
+        font.setPointSize(12)
+        font.setBold(True)
+        painter.setFont(font)
+        painter.drawText(self.rect(), Qt.AlignCenter, str(int(self.current_time)))
+
+
 class MainWindow(QtWidgets.QMainWindow):
     FIT_WINDOW, FIT_WIDTH, MANUAL_ZOOM = 0, 1, 2
 
@@ -1002,12 +1049,35 @@ class MainWindow(QtWidgets.QMainWindow):
         templateMatchingAction = QtWidgets.QWidgetAction(self)
         templateMatchingAction.setDefaultWidget(templateMatchingWidget)
  
+        # Create Timer UI (by Antigravity)
+        self.timerWheel = TimerWheel(max_time=40)
+        
+        timerWidget = QtWidgets.QWidget()
+        timerLayout = QtWidgets.QVBoxLayout(timerWidget)
+        timerLayout.setContentsMargins(4, 2, 4, 2)
+        timerLayout.setSpacing(0)
+        timerLayout.setAlignment(Qt.AlignCenter)
+        timerTitle = QtWidgets.QLabel("Timer")
+        timerTitle.setStyleSheet("font-size: 10px; color: #7F8C8D;")
+        timerTitle.setAlignment(Qt.AlignCenter)
+        timerLayout.addWidget(timerTitle)
+        timerLayout.addWidget(self.timerWheel)
+        
+        timerAction = QtWidgets.QWidgetAction(self)
+        timerAction.setDefaultWidget(timerWidget)
+        
+        self.timer = QtCore.QTimer(self)
+        self.timer.timeout.connect(self.updateTimer)
+        self.timerCount = 40
+
         self.tools = self.toolbar("Tools")
         self.actions.tool = (  # type: ignore[attr-defined]
             open_,
             opendir,
             openPrevImg,
             openNextImg,
+            timerAction,
+            None,
             save,
             deleteFile,
             None, # None is used for seperators in Tools bar(the seperator between "Delete File" and "Create Polygons" btns for example)
@@ -1597,6 +1667,19 @@ class MainWindow(QtWidgets.QMainWindow):
     def status(self, message, delay=5000):
         self.statusBar().showMessage(message, delay)  # type: ignore[union-attr]
 
+    def updateTimer(self):
+        if self.timerCount > 0:
+            self.timerCount -= 1
+            self.timerWheel.setTime(self.timerCount)
+        else:
+            self.timer.stop()
+
+    def resetTimer(self):
+        self.timer.stop()
+        self.timerCount = 40
+        self.timerWheel.setTime(self.timerCount)
+        self.timer.start(1000)
+
     def _submit_ai_prompt(self, _) -> None:
         texts = self._ai_prompt_widget.get_text_prompt().split(",")
         boxes, scores, labels = bbox_from_text.get_bboxes_from_texts(
@@ -1665,6 +1748,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.labelFile = None
         self.otherData = None
         self.canvas.resetState()
+        self.timer.stop()
 
     def currentItem(self):
         items = self.labelList.selectedItems()
@@ -2374,6 +2458,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.toggleActions(True)
         self.canvas.setFocus()
         self.status(str(self.tr("Loaded %s")) % osp.basename(str(filename)))
+        self.resetTimer()
         return True
 
     def resizeEvent(self, event):
