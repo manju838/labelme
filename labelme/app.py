@@ -108,7 +108,11 @@ class TimerWheel(QtWidgets.QWidget):
             painter.drawArc(rect, 90 * 16, span_angle)
 
         # Draw text
-        painter.setPen(QtGui.QColor("#2C3E50"))
+        if self.current_time < 0:
+            painter.setPen(QtGui.QColor("#E74C3C"))
+        else:
+            painter.setPen(QtGui.QColor("#2C3E50"))
+            
         font = painter.font()
         font.setPointSize(12)
         font.setBold(True)
@@ -1668,11 +1672,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.statusBar().showMessage(message, delay)  # type: ignore[union-attr]
 
     def updateTimer(self):
-        if self.timerCount > 0:
-            self.timerCount -= 1
-            self.timerWheel.setTime(self.timerCount)
-        else:
-            self.timer.stop()
+        self.timerCount -= 1
+        self.timerWheel.setTime(self.timerCount)
 
     def resetTimer(self):
         self.timer.stop()
